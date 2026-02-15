@@ -48,6 +48,8 @@ type model struct {
 	clipboard          [][]Cell
 	clipboardWidth     int
 	clipboardHeight    int
+	hoverRow           int
+	hoverCol           int
 	lastMenu           int
 	fixedWidth         int
 	fixedHeight        int

@@ -1,4 +1,4 @@
-module pixel-editor
+module pixl
 
 go 1.25.0
 

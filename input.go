@@ -305,6 +305,10 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	m.mouseX = msg.X
 	m.mouseY = msg.Y
 
+	hoverX, hoverY := m.screenToCanvas(m.mouseX, m.mouseY)
+	m.hoverRow = hoverY
+	m.hoverCol = hoverX
+
 	// Handle popup and menu clicks (only on initial click, not during drag)
 	if msg.Type == tea.MouseLeft && !m.mouseDown {
 		if m.showCharPicker {

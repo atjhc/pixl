@@ -259,6 +259,17 @@ func (m *model) renderCellAt(row, col int) string {
 		}
 	}
 
+	if !m.mouseDown &&
+		row == m.hoverRow && col == m.hoverCol &&
+		row >= 0 && row < m.canvas.height && col >= 0 && col < m.canvas.width {
+		ghostStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+		cursorChar := m.selectedChar
+		if m.selectedTool != "Point" {
+			cursorChar = "┼"
+		}
+		return ghostStyle.Render(cursorChar)
+	}
+
 	cell := m.canvas.Get(row, col)
 	if cell == nil {
 		return " "

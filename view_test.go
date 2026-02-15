@@ -113,6 +113,81 @@ func TestCanvasOffsetNoFixedSize(t *testing.T) {
 	}
 }
 
+func TestGhostPreviewAtHover(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedChar: "●",
+		selectedTool: "Point",
+		hoverRow:     3,
+		hoverCol:     5,
+	}
+
+	got := m.renderCellAt(3, 5)
+
+	if !strings.Contains(got, "●") {
+		t.Errorf("ghost preview should contain selected char, got %q", got)
+	}
+}
+
+func TestGhostPreviewNotShownWhenDrawing(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedChar: "●",
+		selectedTool: "Point",
+		hoverRow:     3,
+		hoverCol:     5,
+		mouseDown:    true,
+	}
+
+	got := m.renderCellAt(3, 5)
+
+	// Should not show ghost when mouse is down (drawing)
+	if strings.Contains(got, "●") {
+		t.Errorf("ghost preview should not appear while drawing, got %q", got)
+	}
+}
+
+func TestCursorShownWithMenuOpen(t *testing.T) {
+	m := &model{
+		canvas:         NewCanvas(10, 10),
+		selectedChar:   "●",
+		selectedTool:   "Point",
+		hoverRow:       3,
+		hoverCol:       5,
+		showCharPicker: true,
+	}
+
+	got := m.renderCellAt(3, 5)
+
+	if !strings.Contains(got, "●") {
+		t.Errorf("cursor should appear when menu is open, got %q", got)
+	}
+}
+
+func TestCrosshairCursorForNonPointTools(t *testing.T) {
+	for _, tool := range []string{"Rectangle", "Ellipse", "Fill", "Select"} {
+		t.Run(tool, func(t *testing.T) {
+			m := &model{
+				canvas:       NewCanvas(10, 10),
+				selectedChar: "●",
+				selectedTool: tool,
+				hoverRow:     3,
+				hoverCol:     5,
+			}
+
+			got := m.renderCellAt(3, 5)
+
+			if !strings.Contains(got, "┼") {
+				t.Errorf("tool %s should show crosshair cursor, got %q", tool, got)
+			}
+			if strings.Contains(got, "●") {
+				t.Errorf("tool %s should not show selected char, got %q", tool, got)
+			}
+		})
+	}
+}
+
+
 func TestCanvasOffsetClamps(t *testing.T) {
 	m := &model{
 		canvas:      NewCanvas(100, 100),
