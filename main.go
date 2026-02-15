@@ -16,15 +16,14 @@ const (
 
 	// Picker layout
 	pickerBorderWidth = 2 // Top and bottom borders (or left and right)
-	pickerDotOffset   = 2 // Column offset where the selection dot appears (border + space)
 
 	// Picker item structure
-	pickerDotWidth      = 3 // " ● " or "   "
+	pickerItemPadding   = 1 // Leading space before content
 	pickerSwatchWidth   = 2 // "██" for colors
 	pickerItemSeparator = 1 // Space between swatch and name
 
-	// Picker content offset (border + dot area = where content starts)
-	pickerContentOffset = 1 + pickerDotWidth // 4: position of swatch/text in picker
+	// Picker content offset (border + padding = where content starts)
+	pickerContentOffset = 1 + pickerItemPadding // 2: position of swatch/text in picker
 
 	// Toolbar button layout
 	toolbarButtonPadding = 1 // Left/right padding inside each button
@@ -119,6 +118,7 @@ type model struct {
 	clipboard          [][]Cell         // Copied cells
 	clipboardWidth     int              // Width of clipboard contents
 	clipboardHeight    int              // Height of clipboard contents
+	lastMenu           int              // Most recently opened menu index (0=shape, 1=fg, 2=bg, 3=tool)
 	// Toolbar button positions (calculated during render)
 	toolbarShapeX      int
 	toolbarForegroundX int
@@ -159,6 +159,7 @@ var tools = []string{
 	"Point",
 	"Rectangle",
 	"Ellipse",
+	"Fill",
 	"Select",
 }
 
@@ -309,36 +310,48 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.paste()
 			return m, nil
 		case "s":
-			m.showCharPicker = !m.showCharPicker
-			m.showFgPicker = false
-			m.showBgPicker = false
-			m.showToolPicker = false
 			if m.showCharPicker {
-				m.selectedCategory = m.findSelectedCharCategory()
-				m.showingShapes = true
-				m.shapesFocusOnPanel = false // Start with focus on categories
+				m.closeMenus()
 			} else {
-				m.showingShapes = false
-				m.shapesFocusOnPanel = false
+				m.openMenu(0)
 			}
 			return m, nil
 		case "f":
-			m.showFgPicker = !m.showFgPicker
-			m.showCharPicker = false
-			m.showBgPicker = false
-			m.showToolPicker = false
+			if m.showFgPicker {
+				m.closeMenus()
+			} else {
+				m.openMenu(1)
+			}
 			return m, nil
 		case "b":
-			m.showBgPicker = !m.showBgPicker
-			m.showCharPicker = false
-			m.showFgPicker = false
-			m.showToolPicker = false
+			if m.showBgPicker {
+				m.closeMenus()
+			} else {
+				m.openMenu(2)
+			}
 			return m, nil
 		case "t":
-			m.showToolPicker = !m.showToolPicker
-			m.showCharPicker = false
-			m.showFgPicker = false
-			m.showBgPicker = false
+			if m.showToolPicker {
+				m.closeMenus()
+			} else {
+				m.openMenu(3)
+			}
+			return m, nil
+		case "[":
+			active := m.activeMenu()
+			if active < 0 {
+				m.openMenu(m.lastMenu)
+			} else {
+				m.openMenu((active - 1 + menuCount) % menuCount)
+			}
+			return m, nil
+		case "]":
+			active := m.activeMenu()
+			if active < 0 {
+				m.openMenu(m.lastMenu)
+			} else {
+				m.openMenu((active + 1) % menuCount)
+			}
 			return m, nil
 		case "esc":
 			if m.showCharPicker && m.shapesFocusOnPanel {
@@ -475,7 +488,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Handle popup clicks
 			if m.showCharPicker {
 				// Calculate category picker bounds - must match View() positioning
-				categoryPickerLeft := m.toolbarShapeItemX - pickerDotOffset
+				categoryPickerLeft := m.toolbarShapeItemX - pickerContentOffset
 				// Find longest category name to determine width
 				maxCategoryWidth := 0
 				for _, group := range characterGroups {
@@ -505,7 +518,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				// Handle shapes picker (always visible when category picker is open)
 				shapesPickerLeft := categoryPickerLeft + categoryPickerWidth
-				// Content is " char " = 3 visual chars + border = 5
+				// Content is " char " = 3 visual chars + border
 				shapesPickerWidth := 3 + pickerBorderWidth
 
 				shapesPickerHeight := len(characterGroups[m.selectedCategory].chars) + pickerBorderWidth
@@ -545,7 +558,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						maxNameLen = len(displayName)
 					}
 				}
-				pickerWidth := pickerBorderWidth + pickerDotWidth + pickerSwatchWidth + pickerItemSeparator + maxNameLen + pickerBorderWidth
+				pickerWidth := pickerBorderWidth + pickerItemPadding + pickerSwatchWidth + pickerItemSeparator + maxNameLen + pickerBorderWidth
 
 				if msg.Y >= pickerTop && msg.Y < pickerTop+pickerHeight &&
 					msg.X >= pickerLeft && msg.X < pickerLeft+pickerWidth {
@@ -571,7 +584,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						maxNameLen = len(displayName)
 					}
 				}
-				pickerWidth := pickerBorderWidth + pickerDotWidth + pickerSwatchWidth + pickerItemSeparator + maxNameLen + pickerBorderWidth
+				pickerWidth := pickerBorderWidth + pickerItemPadding + pickerSwatchWidth + pickerItemSeparator + maxNameLen + pickerBorderWidth
 
 				if msg.Y >= pickerTop && msg.Y < pickerTop+pickerHeight &&
 					msg.X >= pickerLeft && msg.X < pickerLeft+pickerWidth {
@@ -584,11 +597,22 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if m.showToolPicker {
 				pickerHeight := len(tools) + pickerBorderWidth
 				pickerTop := controlBarHeight
-				pickerLeft := m.getToolX() - 2
+				pickerLeft := m.toolbarToolItemX - pickerContentOffset
 
-				// Tool picker width (longest tool name + padding + border)
+				maxToolLen := 0
+				for _, t := range tools {
+					name := t
+					if t == "Ellipse" && m.circleMode {
+						name = "Circle"
+					}
+					if len(name) > maxToolLen {
+						maxToolLen = len(name)
+					}
+				}
+				pickerWidth := pickerBorderWidth + pickerItemPadding + maxToolLen + pickerItemPadding
+
 				if msg.Y >= pickerTop && msg.Y < pickerTop+pickerHeight &&
-					msg.X >= pickerLeft && msg.X < pickerLeft+15 {
+					msg.X >= pickerLeft && msg.X < pickerLeft+pickerWidth {
 					toolIdx := msg.Y - pickerTop - 1
 					if toolIdx >= 0 && toolIdx < len(tools) {
 						m.selectedTool = tools[toolIdx]
@@ -714,6 +738,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if m.selectedTool == "Ellipse" {
 				// Use circle mode if toggle is on OR option key is held
 				m.drawCircle(m.startY, m.startX, clampedY, clampedX, m.circleMode || m.optionKeyHeld)
+			} else if m.selectedTool == "Fill" {
+				m.floodFill(clampedY, clampedX)
 			} else if m.selectedTool == "Select" {
 				// Finalize selection
 				m.hasSelection = true
@@ -765,7 +791,7 @@ func (m *model) View() string {
 		// Position at top of canvas (canvas row 0)
 		popupStartY = 0
 		// Align popup dot (at offset 2) with selected character
-		popupX = m.toolbarShapeItemX - pickerDotOffset
+		popupX = m.toolbarShapeItemX - pickerContentOffset
 
 		// Always show shapes submenu when category picker is open
 		popup2 = m.renderShapesPicker()
@@ -1226,6 +1252,53 @@ func (m model) getToolX() int {
 	return m.toolbarToolX
 }
 
+const menuCount = 4
+
+func (m *model) activeMenu() int {
+	if m.showCharPicker {
+		return 0
+	} else if m.showFgPicker {
+		return 1
+	} else if m.showBgPicker {
+		return 2
+	} else if m.showToolPicker {
+		return 3
+	}
+	return -1
+}
+
+func (m *model) openMenu(idx int) {
+	m.showCharPicker = idx == 0
+	m.showFgPicker = idx == 1
+	m.showBgPicker = idx == 2
+	m.showToolPicker = idx == 3
+	m.showingShapes = idx == 0
+	m.shapesFocusOnPanel = false
+	if idx == 0 {
+		m.selectedCategory = m.findSelectedCharCategory()
+	}
+	if idx >= 0 {
+		m.lastMenu = idx
+	}
+}
+
+func (m *model) closeMenus() {
+	m.showCharPicker = false
+	m.showFgPicker = false
+	m.showBgPicker = false
+	m.showToolPicker = false
+	m.showingShapes = false
+	m.shapesFocusOnPanel = false
+}
+
+func colorDisplayName(name string) string {
+	if name == "transparent" {
+		return "None"
+	}
+	display := strings.ReplaceAll(name, "_", " ")
+	return strings.ToUpper(display[:1]) + display[1:]
+}
+
 func (m model) findSelectedToolIndex() int {
 	for i, tool := range tools {
 		if tool == m.selectedTool {
@@ -1562,6 +1635,46 @@ func (m *model) drawCircle(y1, x1, y2, x2 int, forceCircle bool) {
 	}
 }
 
+func (m *model) floodFill(row, col int) {
+	target := m.canvas.Get(row, col)
+	if target == nil {
+		return
+	}
+
+	targetChar := target.char
+	targetFg := target.foregroundColor
+	targetBg := target.backgroundColor
+
+	if targetChar == m.selectedChar && targetFg == m.foregroundColor && targetBg == m.backgroundColor {
+		return
+	}
+
+	type point struct{ r, c int }
+	queue := []point{{row, col}}
+	visited := make(map[point]bool)
+	visited[point{row, col}] = true
+
+	for len(queue) > 0 {
+		p := queue[0]
+		queue = queue[1:]
+
+		cell := m.canvas.Get(p.r, p.c)
+		if cell == nil || cell.char != targetChar || cell.foregroundColor != targetFg || cell.backgroundColor != targetBg {
+			continue
+		}
+
+		m.canvas.Set(p.r, p.c, m.selectedChar, m.foregroundColor, m.backgroundColor)
+
+		for _, d := range [][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
+			np := point{p.r + d[0], p.c + d[1]}
+			if !visited[np] {
+				visited[np] = true
+				queue = append(queue, np)
+			}
+		}
+	}
+}
+
 func getEllipsePoints(centerY, centerX, ry, rx int) map[[2]int]bool {
 	points := make(map[[2]int]bool)
 
@@ -1730,22 +1843,41 @@ func (m model) renderToolPicker() string {
 		Border(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("12"))
 
+	selectedStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color("#0891B2")).
+		Foreground(lipgloss.Color("#FFFFFF"))
+
+	// Find max tool name width for consistent line widths
+	maxNameLen := 0
+	for _, tool := range tools {
+		name := tool
+		if tool == "Ellipse" && m.circleMode {
+			name = "Circle"
+		}
+		if len(name) > maxNameLen {
+			maxNameLen = len(name)
+		}
+	}
+	lineWidth := maxNameLen + 2 // " name "
+
 	var content strings.Builder
 	for i, tool := range tools {
-		// Add dot for selected tool
-		prefix := "   "
-		if tool == m.selectedTool {
-			prefix = " ● "
-		}
-
 		// Show "Circle" instead of "Ellipse" when in circle mode
 		displayName := tool
 		if tool == "Ellipse" && m.circleMode {
 			displayName = "Circle"
 		}
 
-		// No visible hotkey, but number keys 1-4 still work
-		content.WriteString(prefix + displayName)
+		line := " " + displayName
+		for len(line) < lineWidth {
+			line += " "
+		}
+
+		if tool == m.selectedTool {
+			content.WriteString(selectedStyle.Render(line))
+		} else {
+			content.WriteString(line)
+		}
 		if i < len(tools)-1 {
 			content.WriteString("\n")
 		}
@@ -1759,19 +1891,25 @@ func (m model) renderColorPicker(title string) string {
 		Border(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("12"))
 
+	selectedStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color("#0891B2")).
+		Foreground(lipgloss.Color("#FFFFFF"))
+
 	currentColor := m.foregroundColor
 	if title == "Background" {
 		currentColor = m.backgroundColor
 	}
 
+	// Find max color name width for consistent line widths
+	maxNameLen := 0
+	for _, c := range colors {
+		if len(colorDisplayName(c.name)) > maxNameLen {
+			maxNameLen = len(colorDisplayName(c.name))
+		}
+	}
+
 	var content strings.Builder
 	for i, color := range colors {
-		// Add dot for selected color
-		prefix := "   "
-		if color.name == currentColor {
-			prefix = " ● "
-		}
-
 		var swatch string
 		if color.name == "transparent" {
 			swatch = "  "
@@ -1779,16 +1917,18 @@ func (m model) renderColorPicker(title string) string {
 			swatch = color.style.Render("██")
 		}
 
-		// Format color name (capitalize first letter, replace underscores with spaces)
-		displayName := strings.ReplaceAll(color.name, "_", " ")
-		if len(displayName) > 0 {
-			displayName = strings.ToUpper(displayName[:1]) + displayName[1:]
+		displayName := colorDisplayName(color.name)
+
+		// Pad name to consistent width
+		for len(displayName) < maxNameLen {
+			displayName += " "
 		}
 
-		// No visible hotkey, but number keys 1-9 still work
-		line := fmt.Sprintf("%s%s %s", prefix, swatch, displayName)
-		content.WriteString(line)
-		// Don't add newline after last color
+		name := displayName + " "
+		if color.name == currentColor {
+			name = selectedStyle.Render(name)
+		}
+		content.WriteString(fmt.Sprintf(" %s %s", swatch, name))
 		if i < len(colors)-1 {
 			content.WriteString("\n")
 		}

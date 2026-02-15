@@ -16,7 +16,6 @@ go.work
 
 # Build artifacts
 pixl
-pixel-editor
 
 # Debug logs
 debug.log
