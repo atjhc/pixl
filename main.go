@@ -757,12 +757,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if m.selectedTool == "Fill" {
 				m.floodFill(clampedY, clampedX)
 			} else if m.selectedTool == "Select" {
-				// Finalize selection
-				m.hasSelection = true
-				m.selectionStartY = m.startY
-				m.selectionStartX = m.startX
-				m.selectionEndY = clampedY
-				m.selectionEndX = clampedX
+				// Finalize selection only if it has both width and height
+				dy := m.startY - clampedY
+				dx := m.startX - clampedX
+				if dy < 0 { dy = -dy }
+				if dx < 0 { dx = -dx }
+				if dy > 1 && dx > 1 {
+					m.hasSelection = true
+					m.selectionStartY = m.startY
+					m.selectionStartX = m.startX
+					m.selectionEndY = clampedY
+					m.selectionEndX = clampedX
+				}
 			}
 
 			// Clear option key state after drawing
@@ -1489,23 +1495,33 @@ func (m *model) paste() {
 		return
 	}
 
-	// Use actual canvas height to ensure paste is on canvas
-	// Use constant instead of local variable
 	canvasHeight := m.canvas.height
 
-	// Only paste if mouse is on canvas
-	if m.mouseY < controlBarHeight {
-		return
+	var originY, originX int
+	if m.hasSelection {
+		originY = m.selectionStartY
+		originX = m.selectionStartX
+		if m.selectionEndY < originY {
+			originY = m.selectionEndY
+		}
+		if m.selectionEndX < originX {
+			originX = m.selectionEndX
+		}
+		// Selection border is visual-only; content starts 1 cell inside
+		originY++
+		originX++
+	} else {
+		if m.mouseY < controlBarHeight {
+			return
+		}
+		originY = m.mouseY - controlBarHeight
+		originX = m.mouseX
 	}
 
-	// Convert screen Y to canvas Y
-	canvasMouseY := m.mouseY - controlBarHeight
-
-	// Paste with top-left corner at current mouse position
 	for y := 0; y < m.clipboardHeight; y++ {
 		for x := 0; x < m.clipboardWidth; x++ {
-			targetY := canvasMouseY + y
-			targetX := m.mouseX + x
+			targetY := originY + y
+			targetX := originX + x
 			// Only paste if within canvas bounds
 			if targetY >= 0 && targetY < canvasHeight && targetX >= 0 && targetX < m.canvas.width {
 				cell := m.clipboard[y][x]
