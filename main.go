@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -53,6 +55,26 @@ func NewCanvas(width, height int) Canvas {
 		}
 	}
 	return Canvas{width: width, height: height, cells: cells}
+}
+
+// LoadText populates the canvas from plain text, one character per cell.
+func (c *Canvas) LoadText(text string) {
+	lines := strings.Split(text, "\n")
+	for row, line := range lines {
+		if row >= c.height {
+			break
+		}
+		col := 0
+		for _, r := range line {
+			if col >= c.width {
+				break
+			}
+			if r != ' ' {
+				c.cells[row][col] = Cell{char: string(r), foregroundColor: "white", backgroundColor: "transparent"}
+			}
+			col++
+		}
+	}
 }
 
 // Set sets a character and colors at the given position
@@ -119,6 +141,9 @@ type model struct {
 	clipboardWidth     int              // Width of clipboard contents
 	clipboardHeight    int              // Height of clipboard contents
 	lastMenu           int              // Most recently opened menu index (0=shape, 1=fg, 2=bg, 3=tool)
+	fixedWidth         int              // Fixed canvas width (0 = full screen)
+	fixedHeight        int              // Fixed canvas height (0 = full screen)
+	canvasInitialized  bool             // Whether the fixed-size canvas has been created
 	// Toolbar button positions (calculated during render)
 	toolbarShapeX      int
 	toolbarForegroundX int
@@ -213,27 +238,44 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.ready = true
 
-		// Resize canvas to fit new terminal size
-		// Use constant instead of local variable
-		canvasHeight := m.height - controlBarHeight
-		if canvasHeight > 0 && (canvasHeight != m.canvas.height || m.width != m.canvas.width) {
-			// Create new canvas with new dimensions, copying old content
-			newCanvas := NewCanvas(m.width, canvasHeight)
-			// Copy existing content
-			for row := 0; row < min(m.canvas.height, canvasHeight); row++ {
-				for col := 0; col < min(m.canvas.width, m.width); col++ {
-					cell := m.canvas.Get(row, col)
-					if cell != nil {
-						newCanvas.Set(row, col, cell.char, cell.foregroundColor, cell.backgroundColor)
+		if m.hasFixedSize() {
+			// Fixed canvas: create once at fixed dimensions, don't resize later
+			if !m.canvasInitialized {
+				newCanvas := NewCanvas(m.fixedWidth, m.fixedHeight)
+				// Copy existing content (e.g. from stdin)
+				for row := 0; row < min(m.canvas.height, m.fixedHeight); row++ {
+					for col := 0; col < min(m.canvas.width, m.fixedWidth); col++ {
+						cell := m.canvas.Get(row, col)
+						if cell != nil {
+							newCanvas.Set(row, col, cell.char, cell.foregroundColor, cell.backgroundColor)
+						}
 					}
 				}
+				m.canvas = newCanvas
+				m.canvasInitialized = true
+				if len(m.history) == 0 {
+					m.history = []Canvas{m.copyCanvas()}
+					m.historyIndex = 0
+				}
 			}
-			m.canvas = newCanvas
-
-			// Save initial state to history if this is the first resize
-			if len(m.history) == 0 {
-				m.history = []Canvas{m.copyCanvas()}
-				m.historyIndex = 0
+		} else {
+			// Full-screen canvas: resize to fit terminal
+			canvasHeight := m.height - controlBarHeight
+			if canvasHeight > 0 && (canvasHeight != m.canvas.height || m.width != m.canvas.width) {
+				newCanvas := NewCanvas(m.width, canvasHeight)
+				for row := 0; row < min(m.canvas.height, canvasHeight); row++ {
+					for col := 0; col < min(m.canvas.width, m.width); col++ {
+						cell := m.canvas.Get(row, col)
+						if cell != nil {
+							newCanvas.Set(row, col, cell.char, cell.foregroundColor, cell.backgroundColor)
+						}
+					}
+				}
+				m.canvas = newCanvas
+				if len(m.history) == 0 {
+					m.history = []Canvas{m.copyCanvas()}
+					m.historyIndex = 0
+				}
 			}
 		}
 		return m, nil
@@ -676,21 +718,34 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+		// Compute canvas offsets for mouse translation
+		offY, offX := m.canvasOffset()
+
 		// Handle mouse press (start of stroke)
 		if msg.Type == tea.MouseLeft && !m.mouseDown && msg.Y >= controlBarHeight {
+			// Translate screen coords to canvas coords
+			cy := msg.Y - controlBarHeight - offY - 2
+			cx := msg.X - offX - 1
+			if m.hasFixedSize() {
+				// Only start stroke if click is inside the canvas
+				if cy < 0 || cy >= m.canvas.height || cx < 0 || cx >= m.canvas.width {
+					return m, nil
+				}
+			} else {
+				cy = msg.Y - controlBarHeight
+				cx = msg.X
+			}
 			m.mouseDown = true
 			m.canvasBeforeStroke = m.copyCanvas()
-			m.startX = msg.X
-			m.startY = msg.Y - controlBarHeight
+			m.startX = cx
+			m.startY = cy
 			if m.selectedTool == "Rectangle" || m.selectedTool == "Ellipse" || m.selectedTool == "Select" {
 				m.showPreview = true
-				m.previewEndX = msg.X
-				m.previewEndY = msg.Y - controlBarHeight
-				// Clear previous selection when starting a new one
+				m.previewEndX = cx
+				m.previewEndY = cy
 				if m.selectedTool == "Select" {
 					m.hasSelection = false
 				}
-				// Pre-calculate initial preview points for Ellipse
 				if m.selectedTool == "Ellipse" {
 					m.previewPoints = m.getCirclePoints(m.startY, m.startX, m.previewEndY, m.previewEndX, m.circleMode || m.optionKeyHeld)
 				}
@@ -699,16 +754,23 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Handle drag events (MouseLeft with mouseDown=true OR MouseMotion)
 		if (msg.Type == tea.MouseLeft || msg.Type == tea.MouseMotion) && m.mouseDown {
+			var canvasY, canvasX int
+			if m.hasFixedSize() {
+				canvasY = msg.Y - controlBarHeight - offY - 2
+				canvasX = msg.X - offX - 1
+			} else {
+				canvasY = msg.Y - controlBarHeight
+				canvasX = msg.X
+			}
+
 			if m.selectedTool == "Rectangle" || m.selectedTool == "Ellipse" || m.selectedTool == "Select" {
-				// Clamp coordinates to canvas bounds
-				canvasY := msg.Y - controlBarHeight
 				clampedY := canvasY
 				if clampedY < 0 {
 					clampedY = 0
 				} else if clampedY >= canvasHeight {
 					clampedY = canvasHeight - 1
 				}
-				clampedX := msg.X
+				clampedX := canvasX
 				if clampedX < 0 {
 					clampedX = 0
 				} else if clampedX >= m.canvas.width {
@@ -717,13 +779,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				m.previewEndX = clampedX
 				m.previewEndY = clampedY
-				// Pre-calculate preview points for Ellipse to improve performance
 				if m.selectedTool == "Ellipse" {
 					m.previewPoints = m.getCirclePoints(m.startY, m.startX, m.previewEndY, m.previewEndX, m.circleMode || m.optionKeyHeld)
 				}
-			} else if m.selectedTool == "Point" && msg.Y >= controlBarHeight {
-				canvasY := msg.Y - controlBarHeight
-				m.canvas.Set(canvasY, msg.X, m.selectedChar, m.foregroundColor, m.backgroundColor)
+			} else if m.selectedTool == "Point" && canvasY >= 0 && canvasY < canvasHeight && canvasX >= 0 && canvasX < m.canvas.width {
+				m.canvas.Set(canvasY, canvasX, m.selectedChar, m.foregroundColor, m.backgroundColor)
 			}
 		}
 
@@ -731,17 +791,24 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Type == tea.MouseRelease && m.mouseDown {
 			m.mouseDown = false
 			m.showPreview = false
-			m.previewPoints = nil // Clear cached preview points
+			m.previewPoints = nil
 
-			// Clamp coordinates to canvas bounds
-			canvasY := msg.Y - controlBarHeight
+			var canvasY, canvasX int
+			if m.hasFixedSize() {
+				canvasY = msg.Y - controlBarHeight - offY - 2
+				canvasX = msg.X - offX - 1
+			} else {
+				canvasY = msg.Y - controlBarHeight
+				canvasX = msg.X
+			}
+
 			clampedY := canvasY
 			if clampedY < 0 {
 				clampedY = 0
 			} else if clampedY >= canvasHeight {
 				clampedY = canvasHeight - 1
 			}
-			clampedX := msg.X
+			clampedX := canvasX
 			if clampedX < 0 {
 				clampedX = 0
 			} else if clampedX >= m.canvas.width {
@@ -792,6 +859,12 @@ func (m *model) View() string {
 	// Use actual canvas height for rendering
 	canvasHeight := m.canvas.height
 
+	// Total screen rows below toolbar
+	screenRows := m.height - controlBarHeight
+	if !m.hasFixedSize() {
+		screenRows = canvasHeight
+	}
+
 	var b strings.Builder
 
 	// Render control bar at the top
@@ -810,19 +883,14 @@ func (m *model) View() string {
 	if m.showCharPicker {
 		popup = m.renderCategoryPicker()
 		popupLines = strings.Split(popup, "\n")
-		// Position at top of canvas (canvas row 0)
 		popupStartY = 0
-		// Align popup dot (at offset 2) with selected character
 		popupX = m.toolbarShapeItemX - pickerContentOffset
 
-		// Always show shapes submenu when category picker is open
 		popup2 = m.renderShapesPicker()
 		popup2Lines = strings.Split(popup2, "\n")
-		// Align first shapes row with the selected category row
 		popup2StartY = popupStartY + m.selectedCategory
-		// Clamp so the bottom doesn't go below the canvas
-		if popup2StartY+len(popup2Lines) > canvasHeight {
-			popup2StartY = canvasHeight - len(popup2Lines)
+		if popup2StartY+len(popup2Lines) > screenRows {
+			popup2StartY = screenRows - len(popup2Lines)
 		}
 		if popup2StartY < 0 {
 			popup2StartY = 0
@@ -854,8 +922,20 @@ func (m *model) View() string {
 		popupX = m.toolbarToolItemX - pickerContentOffset
 	}
 
-	// Render canvas with popup overlay
-	for i := 0; i < canvasHeight; i++ {
+	// Render screen rows
+	offY, offX := m.canvasOffset()
+	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
+	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
+	label := fmt.Sprintf("%dx%d", m.canvas.width, m.canvas.height)
+
+	// Screen row positions for fixed-size mode
+	labelRow := offY
+	topBorderRow := offY + 1
+	canvasStartRow := offY + 2
+	canvasEndRow := offY + 1 + m.canvas.height
+	bottomBorderRow := offY + 2 + m.canvas.height
+
+	for i := 0; i < screenRows; i++ {
 		var lineBuilder strings.Builder
 
 		// Render each column
@@ -870,7 +950,6 @@ func (m *model) View() string {
 				popupWidth := lipgloss.Width(popupLine)
 
 				if col >= popupX && col < popupX+popupWidth {
-					// This column is covered by popup - render popup content
 					if col == popupX {
 						lineBuilder.WriteString("\x1b[0m" + popupLine)
 					}
@@ -885,7 +964,6 @@ func (m *model) View() string {
 				popup2Width := lipgloss.Width(popup2Line)
 
 				if col >= popup2X && col < popup2X+popup2Width {
-					// This column is covered by popup2 - render popup content
 					if col == popup2X {
 						lineBuilder.WriteString("\x1b[0m" + popup2Line)
 					}
@@ -893,188 +971,84 @@ func (m *model) View() string {
 				}
 			}
 
-			// If not in popup, render canvas cell or preview
-			if !inPopup {
-				// Check if this position is part of the preview shape
-				inPreview := false
-				if m.showPreview && m.selectedTool == "Rectangle" {
-					minY, maxY := m.startY, m.previewEndY
-					if m.startY > m.previewEndY {
-						minY, maxY = m.previewEndY, m.startY
-					}
-					minX, maxX := m.startX, m.previewEndX
-					if m.startX > m.previewEndX {
-						minX, maxX = m.previewEndX, m.startX
-					}
-
-					if i >= minY && i <= maxY && col >= minX && col <= maxX {
-						if i == minY || i == maxY || col == minX || col == maxX {
-							// Draw preview with current character and colors
-							style := lipgloss.NewStyle()
-							for _, c := range colors {
-								if c.name == m.foregroundColor {
-									style = c.style
-									break
-								}
-							}
-							if m.backgroundColor != "transparent" {
-								for _, c := range colors {
-									if c.name == m.backgroundColor {
-										style = style.Background(c.style.GetForeground())
-										break
-									}
-								}
-							}
-							lineBuilder.WriteString(style.Render(m.selectedChar))
-							inPreview = true
-						}
-					}
-				} else if m.showPreview && m.selectedTool == "Ellipse" {
-					// Use pre-calculated points for performance
-					if m.previewPoints[[2]int{i, col}] {
-						style := lipgloss.NewStyle()
-						for _, c := range colors {
-							if c.name == m.foregroundColor {
-								style = c.style
-								break
-							}
-						}
-						if m.backgroundColor != "transparent" {
-							for _, c := range colors {
-								if c.name == m.backgroundColor {
-									style = style.Background(c.style.GetForeground())
-									break
-								}
-							}
-						}
-						lineBuilder.WriteString(style.Render(m.selectedChar))
-						inPreview = true
-					}
-				} else if m.showPreview && m.selectedTool == "Select" {
-					// Show selection box preview while dragging
-					minY, maxY := m.startY, m.previewEndY
-					if m.startY > m.previewEndY {
-						minY, maxY = m.previewEndY, m.startY
-					}
-					minX, maxX := m.startX, m.previewEndX
-					if m.startX > m.previewEndX {
-						minX, maxX = m.previewEndX, m.startX
-					}
-
-					// Don't draw outline for 1-wide or 1-tall selections (no internal area)
-					hasWidth := minX != maxX
-					hasHeight := minY != maxY
-
-					if hasWidth && hasHeight && i >= minY && i <= maxY && col >= minX && col <= maxX {
-						if i == minY || i == maxY || col == minX || col == maxX {
-							// Draw selection preview with dashed border
-							dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-							var char string
-							// Single pixel selection
-							if minY == maxY && minX == maxX {
-								char = "□"
-							} else if i == minY && col == minX {
-								// Top-left corner
-								char = "┌"
-							} else if i == minY && col == maxX {
-								// Top-right corner
-								char = "┐"
-							} else if i == maxY && col == minX {
-								// Bottom-left corner
-								char = "└"
-							} else if i == maxY && col == maxX {
-								// Bottom-right corner
-								char = "┘"
-							} else if i == minY || i == maxY {
-								// Top/bottom edges
-								char = "┈"
-							} else {
-								// Left/right edges
-								char = "┊"
-							}
-							lineBuilder.WriteString(dimStyle.Render(char))
-							inPreview = true
-						}
-					}
-				}
-
-				// Check for active selection border (persistent after release)
-				inSelection := false
-				if !inPreview && m.hasSelection {
-					minY, maxY := m.selectionStartY, m.selectionEndY
-					if m.selectionStartY > m.selectionEndY {
-						minY, maxY = m.selectionEndY, m.selectionStartY
-					}
-					minX, maxX := m.selectionStartX, m.selectionEndX
-					if m.selectionStartX > m.selectionEndX {
-						minX, maxX = m.selectionEndX, m.selectionStartX
-					}
-
-					// Only draw outline if selection has both width and height
-					hasWidth := minX != maxX
-					hasHeight := minY != maxY
-
-					if hasWidth && hasHeight && i >= minY && i <= maxY && col >= minX && col <= maxX {
-						if i == minY || i == maxY || col == minX || col == maxX {
-							// Draw persistent selection border
-							highlightStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
-							var char string
-							if i == minY && col == minX {
-								// Top-left corner
-								char = "┌"
-							} else if i == minY && col == maxX {
-								// Top-right corner
-								char = "┐"
-							} else if i == maxY && col == minX {
-								// Bottom-left corner
-								char = "└"
-							} else if i == maxY && col == maxX {
-								// Bottom-right corner
-								char = "┘"
-							} else if i == minY || i == maxY {
-								// Top/bottom edges
-								char = "┈"
-							} else {
-								// Left/right edges
-								char = "┊"
-							}
-							lineBuilder.WriteString(highlightStyle.Render(char))
-							inSelection = true
-						}
-					}
-				}
-
-				// Render canvas cell if not in preview or selection border
-				if !inPreview && !inSelection {
-					cell := m.canvas.Get(i, col)
-					if cell != nil {
-						if cell.foregroundColor == "transparent" {
-							lineBuilder.WriteString(" ")
-						} else {
-							style := lipgloss.NewStyle()
-							for _, c := range colors {
-								if c.name == cell.foregroundColor {
-									style = c.style
-									break
-								}
-							}
-							if cell.backgroundColor != "transparent" {
-								for _, c := range colors {
-									if c.name == cell.backgroundColor {
-										style = style.Background(c.style.GetForeground())
-										break
-									}
-								}
-							}
-							lineBuilder.WriteString(style.Render(cell.char))
-						}
-					}
-				}
+			if inPopup {
+				continue
 			}
+
+			// Fixed-size mode: draw border and label
+			if m.hasFixedSize() {
+				// Label row
+				if i == labelRow {
+					labelCol := col - offX
+					if labelCol >= 0 && labelCol < len(label) {
+						lineBuilder.WriteString(labelStyle.Render(string(label[labelCol])))
+						continue
+					}
+					lineBuilder.WriteString(" ")
+					continue
+				}
+
+				// Top border
+				if i == topBorderRow {
+					if col == offX {
+						lineBuilder.WriteString(borderStyle.Render("┌"))
+						continue
+					} else if col == offX+m.canvas.width+1 {
+						lineBuilder.WriteString(borderStyle.Render("┐"))
+						continue
+					} else if col > offX && col < offX+m.canvas.width+1 {
+						lineBuilder.WriteString(borderStyle.Render("─"))
+						continue
+					}
+					lineBuilder.WriteString(" ")
+					continue
+				}
+
+				// Bottom border
+				if i == bottomBorderRow {
+					if col == offX {
+						lineBuilder.WriteString(borderStyle.Render("└"))
+						continue
+					} else if col == offX+m.canvas.width+1 {
+						lineBuilder.WriteString(borderStyle.Render("┘"))
+						continue
+					} else if col > offX && col < offX+m.canvas.width+1 {
+						lineBuilder.WriteString(borderStyle.Render("─"))
+						continue
+					}
+					lineBuilder.WriteString(" ")
+					continue
+				}
+
+				// Canvas rows (with side borders)
+				if i >= canvasStartRow && i <= canvasEndRow {
+					if col == offX {
+						lineBuilder.WriteString(borderStyle.Render("│"))
+						continue
+					} else if col == offX+m.canvas.width+1 {
+						lineBuilder.WriteString(borderStyle.Render("│"))
+						continue
+					} else if col > offX && col < offX+m.canvas.width+1 {
+						// Fall through to canvas cell rendering below
+						canvasRow := i - canvasStartRow
+						canvasCol := col - offX - 1
+						lineBuilder.WriteString(m.renderCellAt(canvasRow, canvasCol))
+						continue
+					}
+					lineBuilder.WriteString(" ")
+					continue
+				}
+
+				// Outside all border areas
+				lineBuilder.WriteString(" ")
+				continue
+			}
+
+			// Full-screen mode: render canvas cell with previews/selections
+			lineBuilder.WriteString(m.renderCellAt(i, col))
 		}
 
-		// Don't add newline after the last row to prevent scrolling
-		if i < canvasHeight-1 {
+		if i < screenRows-1 {
 			b.WriteString(lineBuilder.String() + "\n")
 		} else {
 			b.WriteString(lineBuilder.String())
@@ -1082,6 +1056,142 @@ func (m *model) View() string {
 	}
 
 	return b.String()
+}
+
+// renderCellAt renders a single canvas cell including preview/selection overlays.
+func (m *model) renderCellAt(row, col int) string {
+	// Check preview shapes
+	if m.showPreview && m.selectedTool == "Rectangle" {
+		minY, maxY := m.startY, m.previewEndY
+		if m.startY > m.previewEndY {
+			minY, maxY = m.previewEndY, m.startY
+		}
+		minX, maxX := m.startX, m.previewEndX
+		if m.startX > m.previewEndX {
+			minX, maxX = m.previewEndX, m.startX
+		}
+		if row >= minY && row <= maxY && col >= minX && col <= maxX {
+			if row == minY || row == maxY || col == minX || col == maxX {
+				return m.styledChar()
+			}
+		}
+	} else if m.showPreview && m.selectedTool == "Ellipse" {
+		if m.previewPoints[[2]int{row, col}] {
+			return m.styledChar()
+		}
+	} else if m.showPreview && m.selectedTool == "Select" {
+		minY, maxY := m.startY, m.previewEndY
+		if m.startY > m.previewEndY {
+			minY, maxY = m.previewEndY, m.startY
+		}
+		minX, maxX := m.startX, m.previewEndX
+		if m.startX > m.previewEndX {
+			minX, maxX = m.previewEndX, m.startX
+		}
+		hasWidth := minX != maxX
+		hasHeight := minY != maxY
+		if hasWidth && hasHeight && row >= minY && row <= maxY && col >= minX && col <= maxX {
+			if row == minY || row == maxY || col == minX || col == maxX {
+				dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+				var char string
+				if minY == maxY && minX == maxX {
+					char = "□"
+				} else if row == minY && col == minX {
+					char = "┌"
+				} else if row == minY && col == maxX {
+					char = "┐"
+				} else if row == maxY && col == minX {
+					char = "└"
+				} else if row == maxY && col == maxX {
+					char = "┘"
+				} else if row == minY || row == maxY {
+					char = "┈"
+				} else {
+					char = "┊"
+				}
+				return dimStyle.Render(char)
+			}
+		}
+	}
+
+	// Check persistent selection border
+	if m.hasSelection {
+		minY, maxY := m.selectionStartY, m.selectionEndY
+		if m.selectionStartY > m.selectionEndY {
+			minY, maxY = m.selectionEndY, m.selectionStartY
+		}
+		minX, maxX := m.selectionStartX, m.selectionEndX
+		if m.selectionStartX > m.selectionEndX {
+			minX, maxX = m.selectionEndX, m.selectionStartX
+		}
+		hasWidth := minX != maxX
+		hasHeight := minY != maxY
+		if hasWidth && hasHeight && row >= minY && row <= maxY && col >= minX && col <= maxX {
+			if row == minY || row == maxY || col == minX || col == maxX {
+				highlightStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
+				var char string
+				if row == minY && col == minX {
+					char = "┌"
+				} else if row == minY && col == maxX {
+					char = "┐"
+				} else if row == maxY && col == minX {
+					char = "└"
+				} else if row == maxY && col == maxX {
+					char = "┘"
+				} else if row == minY || row == maxY {
+					char = "┈"
+				} else {
+					char = "┊"
+				}
+				return highlightStyle.Render(char)
+			}
+		}
+	}
+
+	// Render canvas cell
+	cell := m.canvas.Get(row, col)
+	if cell == nil {
+		return " "
+	}
+	if cell.foregroundColor == "transparent" {
+		return " "
+	}
+	style := lipgloss.NewStyle()
+	for _, c := range colors {
+		if c.name == cell.foregroundColor {
+			style = c.style
+			break
+		}
+	}
+	if cell.backgroundColor != "transparent" {
+		for _, c := range colors {
+			if c.name == cell.backgroundColor {
+				style = style.Background(c.style.GetForeground())
+				break
+			}
+		}
+	}
+	return style.Render(cell.char)
+}
+
+// styledChar returns the selected character rendered with current fg/bg colors.
+func (m *model) styledChar() string {
+	style := lipgloss.NewStyle()
+	for _, c := range colors {
+		if c.name == m.foregroundColor {
+			style = c.style
+			break
+		}
+	}
+	if m.backgroundColor != "transparent" {
+		for _, c := range colors {
+			if c.name == m.backgroundColor {
+				style = style.Background(c.style.GetForeground())
+				break
+			}
+		}
+	}
+	return style.Render(m.selectedChar)
 }
 
 func (m model) renderCanvas() string {
@@ -1318,6 +1428,27 @@ func (m *model) closeMenus() {
 	m.shapesFocusOnPanel = false
 }
 
+func (m *model) hasFixedSize() bool {
+	return m.fixedWidth > 0 && m.fixedHeight > 0
+}
+
+func (m *model) canvasOffset() (offsetY, offsetX int) {
+	if !m.hasFixedSize() {
+		return 0, 0
+	}
+	// 3 extra rows: label + top border + bottom border
+	offsetY = (m.height - controlBarHeight - m.canvas.height - 3) / 2
+	// 2 extra cols: left border + right border
+	offsetX = (m.width - m.canvas.width - 2) / 2
+	if offsetY < 0 {
+		offsetY = 0
+	}
+	if offsetX < 0 {
+		offsetX = 0
+	}
+	return
+}
+
 func colorDisplayName(name string) string {
 	if name == "transparent" {
 		return "None"
@@ -1514,8 +1645,14 @@ func (m *model) paste() {
 		if m.mouseY < controlBarHeight {
 			return
 		}
-		originY = m.mouseY - controlBarHeight
-		originX = m.mouseX
+		offY, offX := m.canvasOffset()
+		if m.hasFixedSize() {
+			originY = m.mouseY - controlBarHeight - offY - 2
+			originX = m.mouseX - offX - 1
+		} else {
+			originY = m.mouseY - controlBarHeight
+			originX = m.mouseX
+		}
 	}
 
 	for y := 0; y < m.clipboardHeight; y++ {
@@ -2097,14 +2234,69 @@ func skipVisualWidth(s string, skip int) string {
 }
 
 func main() {
-	p := tea.NewProgram(
-		initialModel(),
+	flagW := flag.Int("w", 0, "fixed canvas width")
+	flagH := flag.Int("h", 0, "fixed canvas height")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: pixl [--help] [-w width] [-h height]\n\nOptions:\n")
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+
+	m := initialModel()
+
+	opts := []tea.ProgramOption{
 		tea.WithAltScreen(),
 		tea.WithMouseAllMotion(),
-	)
+	}
 
-	if _, err := p.Run(); err != nil {
+	var stdinText string
+
+	// Read piped stdin to pre-populate the canvas
+	stat, _ := os.Stdin.Stat()
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		data, err := io.ReadAll(os.Stdin)
+		if err == nil && len(data) > 0 {
+			stdinText = string(data)
+			m.canvas.LoadText(stdinText)
+		}
+		// Reopen terminal for interactive input
+		tty, err := os.Open("/dev/tty")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error opening terminal: %v\n", err)
+			os.Exit(1)
+		}
+		defer tty.Close()
+		opts = append(opts, tea.WithInput(tty))
+	}
+
+	// Determine fixed canvas dimensions
+	if *flagW > 0 && *flagH > 0 {
+		m.fixedWidth = *flagW
+		m.fixedHeight = *flagH
+	} else if stdinText != "" && *flagW == 0 && *flagH == 0 {
+		// Infer dimensions from stdin text
+		lines := strings.Split(strings.TrimRight(stdinText, "\n"), "\n")
+		maxWidth := 0
+		for _, line := range lines {
+			if len(line) > maxWidth {
+				maxWidth = len(line)
+			}
+		}
+		if maxWidth > 0 && len(lines) > 0 {
+			m.fixedWidth = maxWidth
+			m.fixedHeight = len(lines)
+		}
+	}
+
+	p := tea.NewProgram(m, opts...)
+
+	finalModel, err := p.Run()
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
+	}
+
+	if fm, ok := finalModel.(*model); ok {
+		fmt.Print(fm.renderCanvas())
 	}
 }
