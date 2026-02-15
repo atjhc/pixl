@@ -281,7 +281,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if m.showToolPicker {
 				// Tool picker hotkey
 				if idx < len(tools) {
-					m.selectedTool = tools[idx]
+					m.setTool(tools[idx])
 					return m, nil
 				}
 			}
@@ -367,25 +367,33 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.shapesFocusOnPanel = false
 			return m, nil
 		case "left":
+			if m.activeMenu() < 0 {
+				m.openMenu(m.lastMenu)
+				return m, nil
+			}
 			if m.showCharPicker && m.shapesFocusOnPanel {
-				// Move focus back to categories
 				m.shapesFocusOnPanel = false
 				return m, nil
 			}
+			m.openMenu((m.activeMenu() - 1 + menuCount) % menuCount)
+			return m, nil
 		case "right":
+			if m.activeMenu() < 0 {
+				m.openMenu(m.lastMenu)
+				return m, nil
+			}
 			if m.showCharPicker && !m.shapesFocusOnPanel {
-				// Move focus to shapes panel
 				m.shapesFocusOnPanel = true
-				// If no shape is selected in this category, select the first one
 				if m.selectedCategory >= 0 && m.selectedCategory < len(characterGroups) {
 					currentIdx := m.findSelectedCharIndexInCategory(m.selectedCategory)
-					// If selected char is not in current category, select first
 					if currentIdx == 0 && m.selectedChar != characterGroups[m.selectedCategory].chars[0] {
 						m.selectedChar = characterGroups[m.selectedCategory].chars[0]
 					}
 				}
 				return m, nil
 			}
+			m.openMenu((m.activeMenu() + 1) % menuCount)
+			return m, nil
 		case "enter":
 			// Check for Ellipse toggle first, before dismissing pickers
 			if m.selectedTool == "Ellipse" {
@@ -407,6 +415,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "up":
+			if m.activeMenu() < 0 {
+				m.openMenu(m.lastMenu)
+				return m, nil
+			}
 			if m.showCharPicker {
 				if m.shapesFocusOnPanel {
 					// Navigate within shapes of current category
@@ -436,11 +448,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if m.showToolPicker {
 				idx := m.findSelectedToolIndex()
 				if idx > 0 {
-					m.selectedTool = tools[idx-1]
+					m.setTool(tools[idx-1])
 				}
 				return m, nil
 			}
 		case "down":
+			if m.activeMenu() < 0 {
+				m.openMenu(m.lastMenu)
+				return m, nil
+			}
 			if m.showCharPicker {
 				if m.shapesFocusOnPanel {
 					// Navigate within shapes of current category
@@ -470,7 +486,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if m.showToolPicker {
 				idx := m.findSelectedToolIndex()
 				if idx < len(tools)-1 {
-					m.selectedTool = tools[idx+1]
+					m.setTool(tools[idx+1])
 				}
 				return m, nil
 			}
@@ -615,7 +631,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					msg.X >= pickerLeft && msg.X < pickerLeft+pickerWidth {
 					toolIdx := msg.Y - pickerTop - 1
 					if toolIdx >= 0 && toolIdx < len(tools) {
-						m.selectedTool = tools[toolIdx]
+						m.setTool(tools[toolIdx])
 						return m, nil
 					}
 				}
@@ -1280,6 +1296,11 @@ func (m *model) openMenu(idx int) {
 	if idx >= 0 {
 		m.lastMenu = idx
 	}
+}
+
+func (m *model) setTool(tool string) {
+	m.selectedTool = tool
+	m.hasSelection = false
 }
 
 func (m *model) closeMenus() {
