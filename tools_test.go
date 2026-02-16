@@ -81,6 +81,69 @@ func TestDrawRectangleSingleCell(t *testing.T) {
 	}
 }
 
+func TestDrawBoxSingleStyle(t *testing.T) {
+	m := newTestModel(6, 6)
+	m.boxStyle = 0
+	m.drawBox(1, 1, 3, 4)
+
+	expect := map[[2]int]string{
+		{1, 1}: "┌", {1, 2}: "─", {1, 3}: "─", {1, 4}: "┐",
+		{2, 1}: "│", {2, 4}: "│",
+		{3, 1}: "└", {3, 2}: "─", {3, 3}: "─", {3, 4}: "┘",
+	}
+	for pos, want := range expect {
+		cell := m.canvas.Get(pos[0], pos[1])
+		if cell == nil || cell.char != want {
+			got := ""
+			if cell != nil {
+				got = cell.char
+			}
+			t.Errorf("cell(%d,%d) = %q, want %q", pos[0], pos[1], got, want)
+		}
+	}
+
+	// Interior untouched
+	if cell := m.canvas.Get(2, 2); cell.char != " " {
+		t.Errorf("interior (2,2) = %q, want space", cell.char)
+	}
+}
+
+func TestDrawBoxDoubleStyle(t *testing.T) {
+	m := newTestModel(6, 6)
+	m.boxStyle = 1
+	m.drawBox(0, 0, 2, 3)
+
+	expect := map[[2]int]string{
+		{0, 0}: "╔", {0, 1}: "═", {0, 2}: "═", {0, 3}: "╗",
+		{1, 0}: "║", {1, 3}: "║",
+		{2, 0}: "╚", {2, 1}: "═", {2, 2}: "═", {2, 3}: "╝",
+	}
+	for pos, want := range expect {
+		cell := m.canvas.Get(pos[0], pos[1])
+		if cell == nil || cell.char != want {
+			got := ""
+			if cell != nil {
+				got = cell.char
+			}
+			t.Errorf("cell(%d,%d) = %q, want %q", pos[0], pos[1], got, want)
+		}
+	}
+}
+
+func TestDrawBoxReversedCoords(t *testing.T) {
+	m := newTestModel(6, 6)
+	m.boxStyle = 0
+	m.drawBox(3, 4, 1, 1)
+
+	// Should produce same result as (1,1)-(3,4)
+	if cell := m.canvas.Get(1, 1); cell == nil || cell.char != "┌" {
+		t.Errorf("reversed coords: TL = %v, want ┌", cell)
+	}
+	if cell := m.canvas.Get(3, 4); cell == nil || cell.char != "┘" {
+		t.Errorf("reversed coords: BR = %v, want ┘", cell)
+	}
+}
+
 func TestFloodFillRegion(t *testing.T) {
 	m := newTestModel(5, 5)
 

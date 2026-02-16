@@ -24,8 +24,10 @@ type model struct {
 	showCharPicker     bool
 	showFgPicker       bool
 	showBgPicker       bool
-	showToolPicker     bool
-	selectedTool       string
+	showToolPicker         bool
+	toolPickerFocusOnStyle bool
+	selectedTool           string
+	drawingTool            string
 	selectedCategory   int
 	showingShapes      bool
 	shapesFocusOnPanel bool
@@ -40,6 +42,7 @@ type model struct {
 	showPreview        bool
 	optionKeyHeld      bool
 	circleMode         bool
+	boxStyle           int
 	previewPoints      map[[2]int]bool
 	hasSelection       bool
 	selectionStartY    int
@@ -76,6 +79,7 @@ func initialModel() *model {
 		foregroundColor: "white",
 		backgroundColor: "transparent",
 		selectedTool:    "Point",
+		drawingTool:     "Point",
 		ready:           false,
 		history:         []Canvas{},
 		historyIndex:    -1,

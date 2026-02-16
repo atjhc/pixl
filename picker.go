@@ -21,18 +21,18 @@ func (m *model) renderCategoryPicker() string {
 	}
 	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(lipgloss.Color("#FFFFFF"))
 
-	maxNameLen := 0
+	maxNameWidth := 0
 	for _, group := range characterGroups {
-		if len(group.name) > maxNameLen {
-			maxNameLen = len(group.name)
+		if w := lipgloss.Width(group.name); w > maxNameWidth {
+			maxNameWidth = w
 		}
 	}
-	lineWidth := maxNameLen + 2
+	lineWidth := maxNameWidth + 2
 
 	var content strings.Builder
 	for i, group := range characterGroups {
 		line := " " + group.name
-		for len(line) < lineWidth {
+		for lipgloss.Width(line) < lineWidth {
 			line += " "
 		}
 
@@ -83,39 +83,136 @@ func (m *model) renderShapesPicker() string {
 	return pickerStyle.Render(content.String())
 }
 
+func (m *model) renderDrawingToolPicker() string {
+	pickerStyle := lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("12"))
+
+	focusedBg := lipgloss.Color("#0891B2")
+	unfocusedBg := lipgloss.Color("#3A3A3A")
+
+	selectedBg := unfocusedBg
+	if m.toolPickerFocusOnStyle {
+		selectedBg = focusedBg
+	}
+	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(lipgloss.Color("#FFFFFF"))
+
+	currentIdx := m.drawingToolOptionIndex()
+
+	var content strings.Builder
+	for i, opt := range drawingToolOptions {
+		line := " " + opt.name + " "
+
+		if i == currentIdx {
+			content.WriteString(selectedStyle.Render(line))
+		} else {
+			content.WriteString(line)
+		}
+		if i < len(drawingToolOptions)-1 {
+			content.WriteString("\n")
+		}
+	}
+
+	return pickerStyle.Render(content.String())
+}
+
+func (m *model) renderToolSubmenuPicker() string {
+	if isDrawingTool(m.selectedTool) {
+		return m.renderDrawingToolPicker()
+	}
+	if m.selectedTool == "Box" {
+		return m.renderBoxStylePicker()
+	}
+	return ""
+}
+
 func (m *model) renderToolPicker() string {
 	pickerStyle := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("12"))
 
-	selectedStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#0891B2")).
-		Foreground(lipgloss.Color("#FFFFFF"))
+	focusedBg := lipgloss.Color("#0891B2")
+	unfocusedBg := lipgloss.Color("#3A3A3A")
 
-	maxNameLen := 0
-	for _, t := range toolRegistry {
-		name := t.DisplayName(m)
-		if len(name) > maxNameLen {
-			maxNameLen = len(name)
+	selectedBg := focusedBg
+	if m.toolPickerFocusOnStyle {
+		selectedBg = unfocusedBg
+	}
+	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(lipgloss.Color("#FFFFFF"))
+
+	items := m.toolPickerItems()
+
+	iconCol := 0
+	for _, item := range items {
+		if w := lipgloss.Width(item.icon); w > iconCol {
+			iconCol = w
 		}
 	}
-	lineWidth := maxNameLen + 2
+
+	maxNameWidth := 0
+	for _, item := range items {
+		if w := lipgloss.Width(item.name); w > maxNameWidth {
+			maxNameWidth = w
+		}
+	}
 
 	var content strings.Builder
-	for i, t := range toolRegistry {
-		displayName := t.DisplayName(m)
-
-		line := " " + displayName
-		for len(line) < lineWidth {
+	for i, item := range items {
+		var line string
+		if iconCol > 0 {
+			icon := item.icon
+			for lipgloss.Width(icon) < iconCol {
+				icon += " "
+			}
+			line = " " + icon + " " + item.name
+		} else {
+			line = " " + item.name
+		}
+		lineWidth := 1 + iconCol + 1 + maxNameWidth + 1
+		if iconCol == 0 {
+			lineWidth = 1 + maxNameWidth + 1
+		}
+		for lipgloss.Width(line) < lineWidth {
 			line += " "
 		}
 
-		if t.Name() == m.selectedTool {
+		if item.selected {
 			content.WriteString(selectedStyle.Render(line))
 		} else {
 			content.WriteString(line)
 		}
-		if i < len(toolRegistry)-1 {
+		if i < len(items)-1 {
+			content.WriteString("\n")
+		}
+	}
+
+	return pickerStyle.Render(content.String())
+}
+
+func (m *model) renderBoxStylePicker() string {
+	pickerStyle := lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("12"))
+
+	focusedBg := lipgloss.Color("#0891B2")
+	unfocusedBg := lipgloss.Color("#3A3A3A")
+
+	selectedBg := unfocusedBg
+	if m.toolPickerFocusOnStyle {
+		selectedBg = focusedBg
+	}
+	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(lipgloss.Color("#FFFFFF"))
+
+	var content strings.Builder
+	for i, s := range boxStyles {
+		line := fmt.Sprintf(" %s%s%s %s Box ", s.tl, s.h, s.tr, s.name)
+
+		if i == m.boxStyle {
+			content.WriteString(selectedStyle.Render(line))
+		} else {
+			content.WriteString(line)
+		}
+		if i < len(boxStyles)-1 {
 			content.WriteString("\n")
 		}
 	}
@@ -137,10 +234,10 @@ func (m *model) renderColorPicker(title string) string {
 		currentColor = m.backgroundColor
 	}
 
-	maxNameLen := 0
+	maxNameWidth := 0
 	for _, c := range colors {
-		if len(colorDisplayName(c.name)) > maxNameLen {
-			maxNameLen = len(colorDisplayName(c.name))
+		if w := lipgloss.Width(colorDisplayName(c.name)); w > maxNameWidth {
+			maxNameWidth = w
 		}
 	}
 
@@ -155,7 +252,7 @@ func (m *model) renderColorPicker(title string) string {
 
 		displayName := colorDisplayName(color.name)
 
-		for len(displayName) < maxNameLen {
+		for lipgloss.Width(displayName) < maxNameWidth {
 			displayName += " "
 		}
 

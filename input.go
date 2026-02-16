@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -95,9 +96,15 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.backgroundColor = colors[idx].name
 				return m, nil
 			}
+		} else if m.showToolPicker && m.toolPickerFocusOnStyle {
+			if idx < m.toolSubmenuCount() {
+				m.setToolSubmenuIndex(idx)
+				return m, nil
+			}
 		} else if m.showToolPicker {
-			if idx < len(toolRegistry) {
-				m.setTool(toolRegistry[idx].Name())
+			items := m.toolPickerItems()
+			if idx < len(items) {
+				m.setToolPickerIndex(idx)
 				return m, nil
 			}
 		}
@@ -171,12 +178,17 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.shapesFocusOnPanel = false
 			return m, nil
 		}
+		if m.showToolPicker && m.toolPickerFocusOnStyle {
+			m.toolPickerFocusOnStyle = false
+			return m, nil
+		}
 		m.showCharPicker = false
 		m.showFgPicker = false
 		m.showBgPicker = false
 		m.showToolPicker = false
 		m.hasSelection = false
 		m.shapesFocusOnPanel = false
+		m.toolPickerFocusOnStyle = false
 		return m, nil
 	case "left":
 		if m.activeMenu() < 0 {
@@ -185,6 +197,10 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		if m.showCharPicker && m.shapesFocusOnPanel {
 			m.shapesFocusOnPanel = false
+			return m, nil
+		}
+		if m.showToolPicker && m.toolPickerFocusOnStyle {
+			m.toolPickerFocusOnStyle = false
 			return m, nil
 		}
 		m.openMenu((m.activeMenu() - 1 + menuCount) % menuCount)
@@ -204,9 +220,17 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		if m.showToolPicker && !m.toolPickerFocusOnStyle && m.toolHasSubmenu() {
+			m.toolPickerFocusOnStyle = true
+			return m, nil
+		}
 		m.openMenu((m.activeMenu() + 1) % menuCount)
 		return m, nil
 	case "enter":
+		if m.showToolPicker && m.toolPickerFocusOnStyle {
+			m.closeMenus()
+			return m, nil
+		}
 		if m.tool().OnKeyPress(m, "enter") {
 			return m, nil
 		} else if m.showCharPicker {
@@ -252,10 +276,16 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.backgroundColor = colors[idx-1].name
 			}
 			return m, nil
-		} else if m.showToolPicker {
-			idx := m.findSelectedToolIndex()
+		} else if m.showToolPicker && m.toolPickerFocusOnStyle {
+			idx := m.toolSubmenuIndex()
 			if idx > 0 {
-				m.setTool(toolRegistry[idx-1].Name())
+				m.setToolSubmenuIndex(idx - 1)
+			}
+			return m, nil
+		} else if m.showToolPicker {
+			idx := m.toolPickerIndex()
+			if idx > 0 {
+				m.setToolPickerIndex(idx - 1)
 			}
 			return m, nil
 		}
@@ -288,10 +318,17 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.backgroundColor = colors[idx+1].name
 			}
 			return m, nil
+		} else if m.showToolPicker && m.toolPickerFocusOnStyle {
+			idx := m.toolSubmenuIndex()
+			if idx < m.toolSubmenuCount()-1 {
+				m.setToolSubmenuIndex(idx + 1)
+			}
+			return m, nil
 		} else if m.showToolPicker {
-			idx := m.findSelectedToolIndex()
-			if idx < len(toolRegistry)-1 {
-				m.setTool(toolRegistry[idx+1].Name())
+			items := m.toolPickerItems()
+			idx := m.toolPickerIndex()
+			if idx < len(items)-1 {
+				m.setToolPickerIndex(idx + 1)
 			}
 			return m, nil
 		}
@@ -413,25 +450,60 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 				}
 			}
 		} else if m.showToolPicker {
-			pickerHeight := len(toolRegistry) + pickerBorderWidth
+			items := m.toolPickerItems()
+			pickerHeight := len(items) + pickerBorderWidth
 			pickerTop := controlBarHeight
 			pickerLeft := m.toolbarToolItemX - pickerContentOffset
 
 			maxToolLen := 0
-			for _, t := range toolRegistry {
-				name := t.DisplayName(m)
-				if len(name) > maxToolLen {
-					maxToolLen = len(name)
+			for _, item := range items {
+				if len(item.name) > maxToolLen {
+					maxToolLen = len(item.name)
 				}
 			}
 			pickerWidth := pickerBorderWidth + pickerItemPadding + maxToolLen + pickerItemPadding
 
 			if msg.Y >= pickerTop && msg.Y < pickerTop+pickerHeight &&
 				msg.X >= pickerLeft && msg.X < pickerLeft+pickerWidth {
-				toolIdx := msg.Y - pickerTop - 1
-				if toolIdx >= 0 && toolIdx < len(toolRegistry) {
-					m.setTool(toolRegistry[toolIdx].Name())
+				itemIdx := msg.Y - pickerTop - 1
+				if itemIdx >= 0 && itemIdx < len(items) {
+					m.setToolPickerIndex(itemIdx)
+					m.toolPickerFocusOnStyle = false
 					return m, nil
+				}
+			}
+
+			if m.toolHasSubmenu() {
+				submenuLeft := pickerLeft + pickerWidth
+				popup2 := m.renderToolSubmenuPicker()
+				popup2Lines := strings.Split(popup2, "\n")
+				submenuWidth := 0
+				if len(popup2Lines) > 0 {
+					submenuWidth = lipgloss.Width(popup2Lines[0])
+				}
+
+				screenRows := m.height - controlBarHeight
+				if !m.hasFixedSize() {
+					screenRows = m.canvas.height
+				}
+				pickerIdx := m.toolPickerIndex()
+				submenuCanvasY := pickerIdx
+				if submenuCanvasY+len(popup2Lines) > screenRows {
+					submenuCanvasY = screenRows - len(popup2Lines)
+				}
+				if submenuCanvasY < 0 {
+					submenuCanvasY = 0
+				}
+				submenuTop := controlBarHeight + submenuCanvasY
+
+				if msg.Y >= submenuTop && msg.Y < submenuTop+len(popup2Lines) &&
+					msg.X >= submenuLeft && msg.X < submenuLeft+submenuWidth {
+					itemIdx := msg.Y - submenuTop - 1
+					if itemIdx >= 0 && itemIdx < m.toolSubmenuCount() {
+						m.setToolSubmenuIndex(itemIdx)
+						m.toolPickerFocusOnStyle = true
+						return m, nil
+					}
 				}
 			}
 		}

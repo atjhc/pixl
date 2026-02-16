@@ -68,6 +68,24 @@ func (m *model) View() string {
 		popupLines = strings.Split(popup, "\n")
 		popupStartY = 0
 		popupX = m.toolbarToolItemX - pickerContentOffset
+
+		if m.toolHasSubmenu() {
+			popup2 = m.renderToolSubmenuPicker()
+			popup2Lines = strings.Split(popup2, "\n")
+			pickerIdx := m.toolPickerIndex()
+			popup2StartY = popupStartY + pickerIdx
+			if popup2StartY+len(popup2Lines) > screenRows {
+				popup2StartY = screenRows - len(popup2Lines)
+			}
+			if popup2StartY < 0 {
+				popup2StartY = 0
+			}
+			toolPickerWidth := 0
+			if len(popupLines) > 0 {
+				toolPickerWidth = lipgloss.Width(popupLines[0])
+			}
+			popup2X = popupX + toolPickerWidth
+		}
 	}
 
 	// Render screen rows
@@ -231,7 +249,7 @@ func (m *model) renderCellAt(row, col int) string {
 		row >= 0 && row < m.canvas.height && col >= 0 && col < m.canvas.width {
 		ghostStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 		cursorChar := m.selectedChar
-		if c := m.tool().CursorChar(); c != "" {
+		if c := m.tool().CursorChar(m); c != "" {
 			cursorChar = c
 		}
 		return ghostStyle.Render(cursorChar)

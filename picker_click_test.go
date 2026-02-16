@@ -19,6 +19,7 @@ func testShapesPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, 
 				foregroundColor:  "white",
 				backgroundColor:  "transparent",
 				selectedTool:     "Point",
+				drawingTool:      "Point",
 				width:            termW,
 				height:           termH,
 				ready:            true,
@@ -66,6 +67,7 @@ func testShapesPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, 
 					foregroundColor:  "white",
 					backgroundColor:  "transparent",
 					selectedTool:     "Point",
+					drawingTool:      "Point",
 					width:            termW,
 					height:           termH,
 					ready:            true,
@@ -89,6 +91,156 @@ func testShapesPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, 
 				}
 			}
 		})
+	}
+}
+
+func TestDrawingToolPickerClickTargets(t *testing.T) {
+	m := &model{
+		canvas:          NewCanvas(80, 30),
+		selectedChar:    "●",
+		foregroundColor: "white",
+		backgroundColor: "transparent",
+		selectedTool:    "Point",
+		drawingTool:     "Point",
+		width:           80,
+		height:          31,
+		ready:           true,
+		showToolPicker:  true,
+	}
+
+	toolPopup := m.renderToolPicker()
+	toolPopupLines := strings.Split(toolPopup, "\n")
+	toolPopupX := m.toolbarToolItemX - pickerContentOffset
+	toolPickerWidth := 0
+	if len(toolPopupLines) > 0 {
+		toolPickerWidth = lipgloss.Width(toolPopupLines[0])
+	}
+
+	submenuPopup := m.renderDrawingToolPicker()
+	submenuLines := strings.Split(submenuPopup, "\n")
+
+	screenRows := m.height - controlBarHeight
+	if !m.hasFixedSize() {
+		screenRows = m.canvas.height
+	}
+	pickerIdx := m.toolPickerIndex()
+	popup2StartY := pickerIdx
+	if popup2StartY+len(submenuLines) > screenRows {
+		popup2StartY = screenRows - len(submenuLines)
+	}
+	if popup2StartY < 0 {
+		popup2StartY = 0
+	}
+
+	submenuLeft := toolPopupX + toolPickerWidth
+	submenuTop := controlBarHeight + popup2StartY
+
+	for optIdx, opt := range drawingToolOptions {
+		clickX := submenuLeft + 2
+		clickY := submenuTop + 1 + optIdx
+
+		m2 := &model{
+			canvas:          NewCanvas(80, 30),
+			selectedChar:    "●",
+			foregroundColor: "white",
+			backgroundColor: "transparent",
+			selectedTool:    "Point",
+			drawingTool:     "Point",
+			width:           80,
+			height:          31,
+			ready:           true,
+			showToolPicker:  true,
+		}
+
+		msg := tea.MouseMsg{
+			X:    clickX,
+			Y:    clickY,
+			Type: tea.MouseLeft,
+		}
+		m2.handleMouse(msg)
+
+		if m2.selectedTool != opt.toolName {
+			t.Errorf("clicking option %q at (%d,%d): got selectedTool=%q, want %q",
+				opt.name, clickX, clickY, m2.selectedTool, opt.toolName)
+		}
+		if opt.toolName == "Ellipse" && m2.circleMode != opt.circleMode {
+			t.Errorf("clicking option %q at (%d,%d): got circleMode=%v, want %v",
+				opt.name, clickX, clickY, m2.circleMode, opt.circleMode)
+		}
+	}
+}
+
+func TestBoxStylePickerClickTargets(t *testing.T) {
+	m := &model{
+		canvas:          NewCanvas(80, 30),
+		selectedChar:    "●",
+		foregroundColor: "white",
+		backgroundColor: "transparent",
+		selectedTool:    "Box",
+		drawingTool:     "Point",
+		width:           80,
+		height:          31,
+		ready:           true,
+		showToolPicker:  true,
+		boxStyle:        0,
+	}
+
+	toolPopup := m.renderToolPicker()
+	toolPopupLines := strings.Split(toolPopup, "\n")
+	toolPopupX := m.toolbarToolItemX - pickerContentOffset
+	toolPickerWidth := 0
+	if len(toolPopupLines) > 0 {
+		toolPickerWidth = lipgloss.Width(toolPopupLines[0])
+	}
+
+	stylePopup := m.renderBoxStylePicker()
+	stylePopupLines := strings.Split(stylePopup, "\n")
+
+	screenRows := m.height - controlBarHeight
+	if !m.hasFixedSize() {
+		screenRows = m.canvas.height
+	}
+	pickerIdx := m.toolPickerIndex()
+	popup2StartY := pickerIdx
+	if popup2StartY+len(stylePopupLines) > screenRows {
+		popup2StartY = screenRows - len(stylePopupLines)
+	}
+	if popup2StartY < 0 {
+		popup2StartY = 0
+	}
+
+	stylePickerLeft := toolPopupX + toolPickerWidth
+	stylePickerTop := controlBarHeight + popup2StartY
+
+	for styleIdx, bs := range boxStyles {
+		clickX := stylePickerLeft + 2
+		clickY := stylePickerTop + 1 + styleIdx
+
+		m2 := &model{
+			canvas:          NewCanvas(80, 30),
+			selectedChar:    "●",
+			foregroundColor: "white",
+			backgroundColor: "transparent",
+			selectedTool:    "Box",
+			drawingTool:     "Point",
+			width:           80,
+			height:          31,
+			ready:           true,
+			showToolPicker:  true,
+			boxStyle:        0,
+		}
+
+		msg := tea.MouseMsg{
+			X:    clickX,
+			Y:    clickY,
+			Type: tea.MouseLeft,
+		}
+		m2.handleMouse(msg)
+
+		if m2.boxStyle != styleIdx {
+			t.Errorf("clicking style %q at (%d,%d): got boxStyle=%d, want %d",
+				bs.name, clickX, clickY, m2.boxStyle, styleIdx)
+		}
 	}
 }
 

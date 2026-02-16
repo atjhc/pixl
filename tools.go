@@ -26,6 +26,34 @@ func (m *model) drawRectangle(y1, x1, y2, x2 int) {
 	}
 }
 
+func (m *model) drawBox(y1, x1, y2, x2 int) {
+	minY, minX, maxY, maxX := normalizeRect(y1, x1, y2, x2)
+	s := boxStyles[m.boxStyle]
+
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			var ch string
+			switch {
+			case y == minY && x == minX:
+				ch = s.tl
+			case y == minY && x == maxX:
+				ch = s.tr
+			case y == maxY && x == minX:
+				ch = s.bl
+			case y == maxY && x == maxX:
+				ch = s.br
+			case y == minY || y == maxY:
+				ch = s.h
+			case x == minX || x == maxX:
+				ch = s.v
+			default:
+				continue
+			}
+			m.canvas.Set(y, x, ch, m.foregroundColor, m.backgroundColor)
+		}
+	}
+}
+
 func (m *model) getCirclePoints(y1, x1, y2, x2 int, forceCircle bool) map[[2]int]bool {
 	points := make(map[[2]int]bool)
 

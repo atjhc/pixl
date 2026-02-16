@@ -116,15 +116,6 @@ func colorStyleByName(name string) lipgloss.Style {
 	return lipgloss.NewStyle()
 }
 
-func (m *model) findSelectedToolIndex() int {
-	for i, t := range toolRegistry {
-		if t.Name() == m.selectedTool {
-			return i
-		}
-	}
-	return 0
-}
-
 func (m *model) findSelectedCharCategory() int {
 	for i, group := range characterGroups {
 		for _, char := range group.chars {
