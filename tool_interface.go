@@ -94,16 +94,88 @@ func (t RectangleTool) RenderPreview(m *model, row, col int) (string, bool) {
 type BoxTool struct{}
 
 type boxStyle struct {
-	name                   string
-	h, v, tl, tr, bl, br  string
+	name                                     string
+	h, v, tl, tr, bl, br                     string
+	teeRight, teeLeft, teeDown, teeUp, cross string
 }
 
 var boxStyles = []boxStyle{
-	{"Single", "─", "│", "┌", "┐", "└", "┘"},
-	{"Double", "═", "║", "╔", "╗", "╚", "╝"},
-	{"Rounded", "─", "│", "╭", "╮", "╰", "╯"},
-	{"Heavy", "━", "┃", "┏", "┓", "┗", "┛"},
-	{"Dashed", "┄", "┆", "┌", "┐", "└", "┘"},
+	{"Single", "─", "│", "┌", "┐", "└", "┘", "├", "┤", "┬", "┴", "┼"},
+	{"Double", "═", "║", "╔", "╗", "╚", "╝", "╠", "╣", "╦", "╩", "╬"},
+	{"Rounded", "─", "│", "╭", "╮", "╰", "╯", "├", "┤", "┬", "┴", "┼"},
+	{"Heavy", "━", "┃", "┏", "┓", "┗", "┛", "┣", "┫", "┳", "┻", "╋"},
+	{"Dashed", "┄", "┆", "┌", "┐", "└", "┘", "", "", "", "", ""},
+}
+
+func (s *boxStyle) dirs(ch string) (up, down, left, right, ok bool) {
+	switch ch {
+	case s.h:
+		left, right, ok = true, true, true
+	case s.v:
+		up, down, ok = true, true, true
+	case s.tl:
+		down, right, ok = true, true, true
+	case s.tr:
+		down, left, ok = true, true, true
+	case s.bl:
+		up, right, ok = true, true, true
+	case s.br:
+		up, left, ok = true, true, true
+	case s.teeRight:
+		if s.teeRight == "" {
+			return
+		}
+		up, down, right, ok = true, true, true, true
+	case s.teeLeft:
+		if s.teeLeft == "" {
+			return
+		}
+		up, down, left, ok = true, true, true, true
+	case s.teeDown:
+		if s.teeDown == "" {
+			return
+		}
+		down, left, right, ok = true, true, true, true
+	case s.teeUp:
+		if s.teeUp == "" {
+			return
+		}
+		up, left, right, ok = true, true, true, true
+	case s.cross:
+		if s.cross == "" {
+			return
+		}
+		up, down, left, right, ok = true, true, true, true, true
+	}
+	return
+}
+
+func (s *boxStyle) fromDirs(up, down, left, right bool) string {
+	switch {
+	case up && down && left && right:
+		return s.cross
+	case up && down && right:
+		return s.teeRight
+	case up && down && left:
+		return s.teeLeft
+	case down && left && right:
+		return s.teeDown
+	case up && left && right:
+		return s.teeUp
+	case up && down:
+		return s.v
+	case left && right:
+		return s.h
+	case down && right:
+		return s.tl
+	case down && left:
+		return s.tr
+	case up && right:
+		return s.bl
+	case up && left:
+		return s.br
+	}
+	return ""
 }
 
 func (t BoxTool) Name() string { return "Box" }
@@ -162,6 +234,16 @@ func (t BoxTool) RenderPreview(m *model, row, col int) (string, bool) {
 		ch = s.h
 	default:
 		ch = s.v
+	}
+
+	if m.config.MergeBoxBorders && s.cross != "" {
+		if existing := m.canvas.Get(row, col); existing != nil {
+			eu, ed, el, er, ok := s.dirs(existing.char)
+			if ok {
+				nu, nd, nl, nr, _ := s.dirs(ch)
+				ch = s.fromDirs(eu || nu, ed || nd, el || nl, er || nr)
+			}
+		}
 	}
 
 	style := colorStyleByName(m.foregroundColor)

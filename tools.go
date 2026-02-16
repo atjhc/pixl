@@ -49,6 +49,15 @@ func (m *model) drawBox(y1, x1, y2, x2 int) {
 			default:
 				continue
 			}
+			if m.config.MergeBoxBorders && s.cross != "" {
+				if existing := m.canvas.Get(y, x); existing != nil {
+					eu, ed, el, er, ok := s.dirs(existing.char)
+					if ok {
+						nu, nd, nl, nr, _ := s.dirs(ch)
+						ch = s.fromDirs(eu || nu, ed || nd, el || nl, er || nr)
+					}
+				}
+			}
 			m.canvas.Set(y, x, ch, m.foregroundColor, m.backgroundColor)
 		}
 	}

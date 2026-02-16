@@ -33,6 +33,7 @@ func newTestModel(width, height int) *model {
 		selectedChar:    "#",
 		foregroundColor: "white",
 		backgroundColor: "transparent",
+		config:          Config{MergeBoxBorders: true},
 	}
 }
 
@@ -311,6 +312,165 @@ func TestDrawLineSetsCanvas(t *testing.T) {
 		if cell == nil || cell.char != "#" {
 			t.Errorf("drawLine: cell(1,%d) not set", x)
 		}
+	}
+}
+
+func TestDrawBoxMergesTJunctionsSingle(t *testing.T) {
+	m := newTestModel(10, 10)
+	m.boxStyle = 0
+
+	// Draw first box
+	m.drawBox(0, 0, 4, 4)
+	// Draw adjacent box sharing right edge
+	m.drawBox(0, 4, 4, 8)
+
+	// Shared edge at x=4 should have T-junctions
+	expect := map[[2]int]string{
+		{0, 4}: "┬", // was ┐ + ┌
+		{1, 4}: "│", // unchanged vertical
+		{2, 4}: "│",
+		{3, 4}: "│",
+		{4, 4}: "┴", // was ┘ + └
+	}
+	for pos, want := range expect {
+		cell := m.canvas.Get(pos[0], pos[1])
+		if cell == nil || cell.char != want {
+			got := ""
+			if cell != nil {
+				got = cell.char
+			}
+			t.Errorf("cell(%d,%d) = %q, want %q", pos[0], pos[1], got, want)
+		}
+	}
+}
+
+func TestDrawBoxMergesTJunctionsDouble(t *testing.T) {
+	m := newTestModel(10, 10)
+	m.boxStyle = 1
+
+	m.drawBox(0, 0, 4, 4)
+	m.drawBox(0, 4, 4, 8)
+
+	expect := map[[2]int]string{
+		{0, 4}: "╦",
+		{4, 4}: "╩",
+	}
+	for pos, want := range expect {
+		cell := m.canvas.Get(pos[0], pos[1])
+		if cell == nil || cell.char != want {
+			got := ""
+			if cell != nil {
+				got = cell.char
+			}
+			t.Errorf("cell(%d,%d) = %q, want %q", pos[0], pos[1], got, want)
+		}
+	}
+}
+
+func TestDrawBoxMergesTJunctionsHeavy(t *testing.T) {
+	m := newTestModel(10, 10)
+	m.boxStyle = 3
+
+	m.drawBox(0, 0, 4, 4)
+	m.drawBox(0, 4, 4, 8)
+
+	expect := map[[2]int]string{
+		{0, 4}: "┳",
+		{4, 4}: "┻",
+	}
+	for pos, want := range expect {
+		cell := m.canvas.Get(pos[0], pos[1])
+		if cell == nil || cell.char != want {
+			got := ""
+			if cell != nil {
+				got = cell.char
+			}
+			t.Errorf("cell(%d,%d) = %q, want %q", pos[0], pos[1], got, want)
+		}
+	}
+}
+
+func TestDrawBoxDashedNoMerge(t *testing.T) {
+	m := newTestModel(10, 10)
+	m.boxStyle = 4 // Dashed
+
+	m.drawBox(0, 0, 4, 4)
+	m.drawBox(0, 4, 4, 8)
+
+	// Dashed has no T-junction chars, so second box overwrites
+	cell := m.canvas.Get(0, 4)
+	if cell == nil || cell.char != "┌" {
+		got := ""
+		if cell != nil {
+			got = cell.char
+		}
+		t.Errorf("Dashed: cell(0,4) = %q, want ┌ (no merge)", got)
+	}
+}
+
+func TestDrawBoxMergeDisabledByConfig(t *testing.T) {
+	m := newTestModel(10, 10)
+	m.config.MergeBoxBorders = false
+	m.boxStyle = 0
+
+	m.drawBox(0, 0, 4, 4)
+	m.drawBox(0, 4, 4, 8)
+
+	// With merge disabled, second box overwrites with ┌
+	cell := m.canvas.Get(0, 4)
+	if cell == nil || cell.char != "┌" {
+		got := ""
+		if cell != nil {
+			got = cell.char
+		}
+		t.Errorf("merge disabled: cell(0,4) = %q, want ┌", got)
+	}
+}
+
+func TestDrawBoxMergesVerticalAdjacent(t *testing.T) {
+	m := newTestModel(10, 10)
+	m.boxStyle = 0
+
+	m.drawBox(0, 0, 3, 4)
+	m.drawBox(3, 0, 6, 4)
+
+	// Shared edge at y=3 should have T-junctions
+	expect := map[[2]int]string{
+		{3, 0}: "├", // was └ + ┌
+		{3, 4}: "┤", // was ┘ + ┐
+		{3, 1}: "─", // unchanged horizontal
+		{3, 2}: "─",
+		{3, 3}: "─",
+	}
+	for pos, want := range expect {
+		cell := m.canvas.Get(pos[0], pos[1])
+		if cell == nil || cell.char != want {
+			got := ""
+			if cell != nil {
+				got = cell.char
+			}
+			t.Errorf("cell(%d,%d) = %q, want %q", pos[0], pos[1], got, want)
+		}
+	}
+}
+
+func TestDrawBoxMergesCross(t *testing.T) {
+	m := newTestModel(10, 10)
+	m.boxStyle = 0
+
+	// 2x2 grid of boxes sharing a center point
+	m.drawBox(0, 0, 3, 3)
+	m.drawBox(0, 3, 3, 6)
+	m.drawBox(3, 0, 6, 3)
+	m.drawBox(3, 3, 6, 6)
+
+	cell := m.canvas.Get(3, 3)
+	if cell == nil || cell.char != "┼" {
+		got := ""
+		if cell != nil {
+			got = cell.char
+		}
+		t.Errorf("center cross: cell(3,3) = %q, want ┼", got)
 	}
 }
 

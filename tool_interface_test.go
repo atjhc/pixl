@@ -6,6 +6,159 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+func TestBoxStyleDirs(t *testing.T) {
+	s := &boxStyles[0] // Single
+	tests := []struct {
+		ch                         string
+		wantUp, wantDown, wantLeft, wantRight, wantOk bool
+	}{
+		{"─", false, false, true, true, true},
+		{"│", true, true, false, false, true},
+		{"┌", false, true, false, true, true},
+		{"┐", false, true, true, false, true},
+		{"└", true, false, false, true, true},
+		{"┘", true, false, true, false, true},
+		{"├", true, true, false, true, true},
+		{"┤", true, true, true, false, true},
+		{"┬", false, true, true, true, true},
+		{"┴", true, false, true, true, true},
+		{"┼", true, true, true, true, true},
+		{"X", false, false, false, false, false},
+	}
+	for _, tt := range tests {
+		up, down, left, right, ok := s.dirs(tt.ch)
+		if up != tt.wantUp || down != tt.wantDown || left != tt.wantLeft || right != tt.wantRight || ok != tt.wantOk {
+			t.Errorf("dirs(%q) = (%v,%v,%v,%v,%v), want (%v,%v,%v,%v,%v)",
+				tt.ch, up, down, left, right, ok,
+				tt.wantUp, tt.wantDown, tt.wantLeft, tt.wantRight, tt.wantOk)
+		}
+	}
+}
+
+func TestBoxStyleFromDirs(t *testing.T) {
+	s := &boxStyles[0] // Single
+	tests := []struct {
+		up, down, left, right bool
+		want                  string
+	}{
+		{false, false, true, true, "─"},
+		{true, true, false, false, "│"},
+		{false, true, false, true, "┌"},
+		{false, true, true, false, "┐"},
+		{true, false, false, true, "└"},
+		{true, false, true, false, "┘"},
+		{true, true, false, true, "├"},
+		{true, true, true, false, "┤"},
+		{false, true, true, true, "┬"},
+		{true, false, true, true, "┴"},
+		{true, true, true, true, "┼"},
+	}
+	for _, tt := range tests {
+		got := s.fromDirs(tt.up, tt.down, tt.left, tt.right)
+		if got != tt.want {
+			t.Errorf("fromDirs(%v,%v,%v,%v) = %q, want %q",
+				tt.up, tt.down, tt.left, tt.right, got, tt.want)
+		}
+	}
+}
+
+func TestBoxStyleDirsDouble(t *testing.T) {
+	s := &boxStyles[1] // Double
+	up, down, left, right, ok := s.dirs("═")
+	if !ok || !left || !right || up || down {
+		t.Errorf("Double dirs(═) unexpected")
+	}
+	up, down, left, right, ok = s.dirs("╬")
+	if !ok || !up || !down || !left || !right {
+		t.Errorf("Double dirs(╬) unexpected")
+	}
+}
+
+func TestBoxStyleDirsDashedNoTJunctions(t *testing.T) {
+	s := &boxStyles[4] // Dashed
+	_, _, _, _, ok := s.dirs("├")
+	if ok {
+		t.Error("Dashed style should not recognize ├")
+	}
+}
+
+func TestBoxToolRenderPreviewMerges(t *testing.T) {
+	m := newTestModel(10, 10)
+	m.boxStyle = 0
+
+	// Draw a box first (committed to canvas)
+	m.drawBox(0, 0, 4, 4)
+
+	// Simulate dragging a second box adjacent to the right
+	m.startY = 0
+	m.startX = 4
+	m.previewEndY = 4
+	m.previewEndX = 8
+	m.showPreview = true
+
+	tool := BoxTool{}
+
+	// Top-left of second box at (0,4) overlaps first box's top-right corner ┐
+	// Should preview as ┬
+	rendered, ok := tool.RenderPreview(m, 0, 4)
+	if !ok {
+		t.Fatal("expected preview at (0,4)")
+	}
+	if rendered == "" {
+		t.Fatal("expected non-empty preview at (0,4)")
+	}
+	// Extract the visible character from the styled string
+	_, _, ch := firstVisibleCharPos(rendered)
+	if ch != '┬' {
+		t.Errorf("preview at (0,4) = %c, want ┬", ch)
+	}
+
+	// Bottom-left of second box at (4,4) overlaps first box's bottom-right corner ┘
+	// Should preview as ┴
+	rendered, ok = tool.RenderPreview(m, 4, 4)
+	if !ok {
+		t.Fatal("expected preview at (4,4)")
+	}
+	_, _, ch = firstVisibleCharPos(rendered)
+	if ch != '┴' {
+		t.Errorf("preview at (4,4) = %c, want ┴", ch)
+	}
+
+	// Non-overlapping cell should be unchanged
+	rendered, ok = tool.RenderPreview(m, 0, 6)
+	if !ok {
+		t.Fatal("expected preview at (0,6)")
+	}
+	_, _, ch = firstVisibleCharPos(rendered)
+	if ch != '─' {
+		t.Errorf("preview at (0,6) = %c, want ─", ch)
+	}
+}
+
+func TestBoxToolRenderPreviewNoMergeWhenDisabled(t *testing.T) {
+	m := newTestModel(10, 10)
+	m.config.MergeBoxBorders = false
+	m.boxStyle = 0
+
+	m.drawBox(0, 0, 4, 4)
+
+	m.startY = 0
+	m.startX = 4
+	m.previewEndY = 4
+	m.previewEndX = 8
+	m.showPreview = true
+
+	tool := BoxTool{}
+	rendered, ok := tool.RenderPreview(m, 0, 4)
+	if !ok {
+		t.Fatal("expected preview at (0,4)")
+	}
+	_, _, ch := firstVisibleCharPos(rendered)
+	if ch != '┌' {
+		t.Errorf("preview at (0,4) with merge disabled = %c, want ┌", ch)
+	}
+}
+
 func TestToolRegistryOrderAndNames(t *testing.T) {
 	expected := []string{"Point", "Rectangle", "Box", "Ellipse", "Line", "Fill", "Select"}
 

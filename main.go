@@ -55,6 +55,7 @@ type model struct {
 	hoverRow           int
 	hoverCol           int
 	lastMenu           int
+	config             Config
 	filePath           string
 	fixedWidth         int
 	fixedHeight        int
@@ -101,6 +102,7 @@ func main() {
 	flag.Parse()
 
 	m := initialModel()
+	m.config = loadConfig()
 
 	opts := []tea.ProgramOption{
 		tea.WithAltScreen(),

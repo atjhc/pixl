@@ -4,17 +4,18 @@ import "unicode/utf8"
 
 func boxDirs(ch rune) (up, down, left, right bool) {
 	switch ch {
+	// Single / Rounded
 	case '─':
 		left, right = true, true
 	case '│':
 		up, down = true, true
-	case '┌':
+	case '┌', '╭':
 		down, right = true, true
-	case '┐':
+	case '┐', '╮':
 		down, left = true, true
-	case '└':
+	case '└', '╰':
 		up, right = true, true
-	case '┘':
+	case '┘', '╯':
 		up, left = true, true
 	case '├':
 		up, down, right = true, true, true
@@ -25,6 +26,52 @@ func boxDirs(ch rune) (up, down, left, right bool) {
 	case '┴':
 		up, left, right = true, true, true
 	case '┼':
+		up, down, left, right = true, true, true, true
+	// Double
+	case '═':
+		left, right = true, true
+	case '║':
+		up, down = true, true
+	case '╔':
+		down, right = true, true
+	case '╗':
+		down, left = true, true
+	case '╚':
+		up, right = true, true
+	case '╝':
+		up, left = true, true
+	case '╠':
+		up, down, right = true, true, true
+	case '╣':
+		up, down, left = true, true, true
+	case '╦':
+		down, left, right = true, true, true
+	case '╩':
+		up, left, right = true, true, true
+	case '╬':
+		up, down, left, right = true, true, true, true
+	// Heavy
+	case '━':
+		left, right = true, true
+	case '┃':
+		up, down = true, true
+	case '┏':
+		down, right = true, true
+	case '┓':
+		down, left = true, true
+	case '┗':
+		up, right = true, true
+	case '┛':
+		up, left = true, true
+	case '┣':
+		up, down, right = true, true, true
+	case '┫':
+		up, down, left = true, true, true
+	case '┳':
+		down, left, right = true, true, true
+	case '┻':
+		up, left, right = true, true, true
+	case '╋':
 		up, down, left, right = true, true, true, true
 	}
 	return
