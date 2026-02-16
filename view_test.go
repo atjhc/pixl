@@ -188,6 +188,97 @@ func TestCrosshairCursorForNonPointTools(t *testing.T) {
 }
 
 
+func TestToolbarShowsFilename(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 5),
+		selectedChar: "●",
+		selectedTool: "Point",
+		width:        80,
+		filePath:     "/Users/james/Documents/code/pixl/test.txt",
+	}
+
+	got := m.renderControlBar()
+	if !strings.Contains(got, "pixl/test.txt") {
+		t.Errorf("toolbar should show last two path components, got %q", got)
+	}
+	if strings.Contains(got, "code/pixl") {
+		t.Errorf("toolbar should not show more than two path components, got %q", got)
+	}
+}
+
+func TestToolbarShowsShortPath(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 5),
+		selectedChar: "●",
+		selectedTool: "Point",
+		width:        80,
+		filePath:     "test.txt",
+	}
+
+	got := m.renderControlBar()
+	if !strings.Contains(got, "test.txt") {
+		t.Errorf("toolbar should show filename for single-component path, got %q", got)
+	}
+}
+
+func TestToolbarNoFilenameWhenEmpty(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 5),
+		selectedChar: "●",
+		selectedTool: "Point",
+		width:        80,
+	}
+
+	got := m.renderControlBar()
+	if strings.Contains(got, "test.txt") {
+		t.Error("toolbar should not show a filename when filePath is empty")
+	}
+}
+
+func TestRenderCanvasPlainText(t *testing.T) {
+	m := &model{canvas: NewCanvas(5, 2)}
+	m.canvas.Set(0, 0, "A", "red", "transparent")
+	m.canvas.Set(0, 2, "B", "blue", "transparent")
+
+	got := m.renderCanvasPlain()
+	lines := strings.Split(got, "\n")
+
+	// Red foreground = \x1b[31m, blue = \x1b[34m, reset = \x1b[0m
+	wantRow0 := "\x1b[31mA\x1b[0m \x1b[34mB\x1b[0m  "
+	if lines[0] != wantRow0 {
+		t.Errorf("plain row 0 = %q, want %q", lines[0], wantRow0)
+	}
+	if lines[1] != "     " {
+		t.Errorf("plain row 1 = %q, want %q", lines[1], "     ")
+	}
+}
+
+func TestRenderCanvasPlainWithBackground(t *testing.T) {
+	m := &model{canvas: NewCanvas(2, 1)}
+	m.canvas.Set(0, 0, "X", "red", "blue")
+
+	got := m.renderCanvasPlain()
+	lines := strings.Split(got, "\n")
+
+	want := "\x1b[31;44mX\x1b[0m "
+	if lines[0] != want {
+		t.Errorf("plain row 0 = %q, want %q", lines[0], want)
+	}
+}
+
+func TestRenderCanvasPlainWhiteIsDefault(t *testing.T) {
+	m := &model{canvas: NewCanvas(2, 1)}
+	m.canvas.Set(0, 0, "X", "white", "transparent")
+
+	got := m.renderCanvasPlain()
+	lines := strings.Split(got, "\n")
+
+	// White foreground with no background should render without ANSI
+	if lines[0] != "X " {
+		t.Errorf("plain row 0 = %q, want %q", lines[0], "X ")
+	}
+}
+
 func TestCanvasOffsetClamps(t *testing.T) {
 	m := &model{
 		canvas:      NewCanvas(100, 100),

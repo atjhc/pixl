@@ -143,6 +143,55 @@ func TestLoadTextSkipsSpaces(t *testing.T) {
 	}
 }
 
+func TestLoadTextANSIForeground(t *testing.T) {
+	c := NewCanvas(3, 1)
+	c.LoadText("\x1b[31mA\x1b[0mB")
+
+	cellA := c.Get(0, 0)
+	if cellA.char != "A" {
+		t.Errorf("(0,0).char = %q, want A", cellA.char)
+	}
+	if cellA.foregroundColor != "red" {
+		t.Errorf("(0,0).fg = %q, want red", cellA.foregroundColor)
+	}
+
+	cellB := c.Get(0, 1)
+	if cellB.char != "B" {
+		t.Errorf("(0,1).char = %q, want B", cellB.char)
+	}
+	if cellB.foregroundColor != "white" {
+		t.Errorf("(0,1).fg = %q, want white (reset)", cellB.foregroundColor)
+	}
+}
+
+func TestLoadTextANSIBackground(t *testing.T) {
+	c := NewCanvas(2, 1)
+	c.LoadText("\x1b[31;44mX\x1b[0m")
+
+	cell := c.Get(0, 0)
+	if cell.char != "X" {
+		t.Errorf("(0,0).char = %q, want X", cell.char)
+	}
+	if cell.foregroundColor != "red" {
+		t.Errorf("(0,0).fg = %q, want red", cell.foregroundColor)
+	}
+	if cell.backgroundColor != "blue" {
+		t.Errorf("(0,0).bg = %q, want blue", cell.backgroundColor)
+	}
+}
+
+func TestLoadTextANSIDoesNotCountAsColumns(t *testing.T) {
+	c := NewCanvas(3, 1)
+	c.LoadText("\x1b[31mA\x1b[0m \x1b[34mB\x1b[0m")
+
+	if cell := c.Get(0, 0); cell.char != "A" || cell.foregroundColor != "red" {
+		t.Errorf("(0,0) = %+v, want A/red", cell)
+	}
+	if cell := c.Get(0, 2); cell.char != "B" || cell.foregroundColor != "blue" {
+		t.Errorf("(0,2) = %+v, want B/blue", cell)
+	}
+}
+
 func TestCopyIsDeep(t *testing.T) {
 	orig := NewCanvas(3, 3)
 	orig.Set(1, 1, "X", "red", "blue")

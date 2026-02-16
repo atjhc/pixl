@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -118,9 +120,34 @@ func (m *model) renderControlBar() string {
 
 	barContent := shapeButton + sep + fgButton + sep + bgButton + sep + toolButton + sep + modeIndicator
 
+	fileIndicator := ""
+	if m.filePath != "" {
+		displayName := shortPath(m.filePath)
+		contentWidth := lipgloss.Width(barContent)
+		nameWidth := lipgloss.Width(displayName)
+		gap := m.width - contentWidth - nameWidth - 1
+		if gap > 0 {
+			fileIndicator = baseStyle.Copy().Padding(0, 0).Render(
+				strings.Repeat(" ", gap) + displayName,
+			)
+		} else {
+			fileIndicator = baseStyle.Copy().Padding(0, 0, 0, 1).Render(displayName)
+		}
+	}
+
 	barStyle := lipgloss.NewStyle().
 		Background(bgColor).
 		Width(m.width)
 
-	return barStyle.Render(barContent) + "\n"
+	return barStyle.Render(barContent + fileIndicator) + "\n"
+}
+
+func shortPath(path string) string {
+	dir, file := filepath.Split(path)
+	dir = filepath.Clean(dir)
+	parent := filepath.Base(dir)
+	if parent == "." || parent == "/" {
+		return file
+	}
+	return parent + "/" + file
 }

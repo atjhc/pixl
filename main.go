@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -51,6 +52,7 @@ type model struct {
 	hoverRow           int
 	hoverCol           int
 	lastMenu           int
+	filePath           string
 	fixedWidth         int
 	fixedHeight        int
 	canvasInitialized  bool
@@ -89,7 +91,7 @@ func main() {
 	flagW := flag.Int("w", 0, "fixed canvas width")
 	flagH := flag.Int("h", 0, "fixed canvas height")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: pixl [--help] [-w width] [-h height]\n\nOptions:\n")
+		fmt.Fprintf(os.Stderr, "Usage: pixl [--help] [-w width] [-h height] [file]\n\nOptions:\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -102,6 +104,19 @@ func main() {
 	}
 
 	var stdinText string
+	var fileText string
+
+	if args := flag.Args(); len(args) > 0 {
+		m.filePath = args[0]
+		if abs, err := filepath.Abs(m.filePath); err == nil {
+			m.filePath = abs
+		}
+		data, err := os.ReadFile(m.filePath)
+		if err == nil && len(data) > 0 {
+			fileText = string(data)
+			m.canvas.LoadText(fileText)
+		}
+	}
 
 	stat, _ := os.Stdin.Stat()
 	if (stat.Mode() & os.ModeCharDevice) == 0 {
@@ -119,15 +134,21 @@ func main() {
 		opts = append(opts, tea.WithInput(tty))
 	}
 
+	inputText := stdinText
+	if inputText == "" {
+		inputText = fileText
+	}
+
 	if *flagW > 0 && *flagH > 0 {
 		m.fixedWidth = *flagW
 		m.fixedHeight = *flagH
-	} else if stdinText != "" && *flagW == 0 && *flagH == 0 {
-		lines := strings.Split(strings.TrimRight(stdinText, "\n"), "\n")
+	} else if inputText != "" && *flagW == 0 && *flagH == 0 {
+		lines := strings.Split(strings.TrimRight(inputText, "\n"), "\n")
 		maxWidth := 0
 		for _, line := range lines {
-			if len(line) > maxWidth {
-				maxWidth = len(line)
+			w := visibleWidth(line)
+			if w > maxWidth {
+				maxWidth = w
 			}
 		}
 		if maxWidth > 0 && len(lines) > 0 {
@@ -145,6 +166,15 @@ func main() {
 	}
 
 	if fm, ok := finalModel.(*model); ok {
-		fmt.Print(fm.renderCanvas())
+		output := fm.renderCanvas()
+		if fm.filePath != "" {
+			output = fm.renderCanvasPlain()
+			if err := os.WriteFile(fm.filePath, []byte(output), 0644); err != nil {
+				fmt.Fprintf(os.Stderr, "Error writing file: %v\n", err)
+				os.Exit(1)
+			}
+		} else {
+			fmt.Print(output)
+		}
 	}
 }

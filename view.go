@@ -316,6 +316,43 @@ func (m *model) renderCanvas() string {
 	return b.String()
 }
 
+func (m *model) renderCanvasPlain() string {
+	var b strings.Builder
+
+	for row := 0; row < m.canvas.height; row++ {
+		for col := 0; col < m.canvas.width; col++ {
+			cell := m.canvas.Get(row, col)
+			if cell == nil || cell.foregroundColor == "transparent" {
+				b.WriteString(" ")
+				continue
+			}
+
+			fg := colorToANSI(cell.foregroundColor)
+			bg := colorToANSIBg(cell.backgroundColor)
+
+			if fg == "" && bg == "" {
+				b.WriteString(cell.char)
+				continue
+			}
+
+			b.WriteString("\x1b[")
+			if fg != "" && bg != "" {
+				b.WriteString(fg + ";" + bg)
+			} else if fg != "" {
+				b.WriteString(fg)
+			} else {
+				b.WriteString(bg)
+			}
+			b.WriteString("m")
+			b.WriteString(cell.char)
+			b.WriteString("\x1b[0m")
+		}
+		b.WriteString("\n")
+	}
+
+	return b.String()
+}
+
 func (m *model) hasFixedSize() bool {
 	return m.fixedWidth > 0 && m.fixedHeight > 0
 }

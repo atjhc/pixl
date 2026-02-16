@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 // Canvas represents the drawing area
 type Canvas struct {
@@ -35,17 +38,98 @@ func (c *Canvas) LoadText(text string) {
 		if row >= c.height {
 			break
 		}
+
+		fg := "white"
+		bg := "transparent"
 		col := 0
-		for _, r := range line {
+		i := 0
+		runes := []rune(line)
+
+		for i < len(runes) {
 			if col >= c.width {
 				break
 			}
+
+			if runes[i] == '\x1b' && i+1 < len(runes) && runes[i+1] == '[' {
+				// Parse ANSI escape: \x1b[...m
+				j := i + 2
+				for j < len(runes) && runes[j] != 'm' {
+					j++
+				}
+				if j < len(runes) {
+					params := string(runes[i+2 : j])
+					fg, bg = applyANSIParams(params, fg, bg)
+					i = j + 1
+					continue
+				}
+			}
+
+			r := runes[i]
 			if r != ' ' {
-				c.cells[row][col] = Cell{char: string(r), foregroundColor: "white", backgroundColor: "transparent"}
+				c.cells[row][col] = Cell{char: string(r), foregroundColor: fg, backgroundColor: bg}
 			}
 			col++
+			i++
 		}
 	}
+}
+
+func applyANSIParams(params, fg, bg string) (string, string) {
+	if params == "" || params == "0" {
+		return "white", "transparent"
+	}
+	for _, p := range strings.Split(params, ";") {
+		code, err := strconv.Atoi(p)
+		if err != nil {
+			continue
+		}
+		if name, ok := ansiFgToName[code]; ok {
+			fg = name
+		}
+		if name, ok := ansiBgToName[code]; ok {
+			bg = name
+		}
+		if code == 0 {
+			fg = "white"
+			bg = "transparent"
+		}
+	}
+	return fg, bg
+}
+
+func visibleWidth(line string) int {
+	width := 0
+	runes := []rune(line)
+	i := 0
+	for i < len(runes) {
+		if runes[i] == '\x1b' && i+1 < len(runes) && runes[i+1] == '[' {
+			j := i + 2
+			for j < len(runes) && runes[j] != 'm' {
+				j++
+			}
+			if j < len(runes) {
+				i = j + 1
+				continue
+			}
+		}
+		width++
+		i++
+	}
+	return width
+}
+
+var ansiFgToName = map[int]string{
+	30: "black", 31: "red", 32: "green", 33: "yellow",
+	34: "blue", 35: "magenta", 36: "cyan", 37: "white",
+	90: "bright_black", 91: "bright_red", 92: "bright_green", 93: "bright_yellow",
+	94: "bright_blue", 95: "bright_magenta", 96: "bright_cyan", 97: "bright_white",
+}
+
+var ansiBgToName = map[int]string{
+	40: "black", 41: "red", 42: "green", 43: "yellow",
+	44: "blue", 45: "magenta", 46: "cyan", 47: "white",
+	100: "bright_black", 101: "bright_red", 102: "bright_green", 103: "bright_yellow",
+	104: "bright_blue", 105: "bright_magenta", 106: "bright_cyan", 107: "bright_white",
 }
 
 // Set sets a character and colors at the given position
