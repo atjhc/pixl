@@ -29,16 +29,6 @@ var characterGroups = []struct {
 	{"Symbols", []string{"☺", "☻", "✓", "✗", "⚙", "⚠", "☢"}},
 }
 
-// Available tools
-var tools = []string{
-	"Point",
-	"Rectangle",
-	"Ellipse",
-	"Line",
-	"Fill",
-	"Select",
-}
-
 // Available colors
 var colors = []struct {
 	name  string
@@ -127,8 +117,8 @@ func colorStyleByName(name string) lipgloss.Style {
 }
 
 func (m *model) findSelectedToolIndex() int {
-	for i, tool := range tools {
-		if tool == m.selectedTool {
+	for i, t := range toolRegistry {
+		if t.Name() == m.selectedTool {
 			return i
 		}
 	}

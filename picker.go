@@ -93,11 +93,8 @@ func (m *model) renderToolPicker() string {
 		Foreground(lipgloss.Color("#FFFFFF"))
 
 	maxNameLen := 0
-	for _, tool := range tools {
-		name := tool
-		if tool == "Ellipse" && m.circleMode {
-			name = "Circle"
-		}
+	for _, t := range toolRegistry {
+		name := t.DisplayName(m)
 		if len(name) > maxNameLen {
 			maxNameLen = len(name)
 		}
@@ -105,23 +102,20 @@ func (m *model) renderToolPicker() string {
 	lineWidth := maxNameLen + 2
 
 	var content strings.Builder
-	for i, tool := range tools {
-		displayName := tool
-		if tool == "Ellipse" && m.circleMode {
-			displayName = "Circle"
-		}
+	for i, t := range toolRegistry {
+		displayName := t.DisplayName(m)
 
 		line := " " + displayName
 		for len(line) < lineWidth {
 			line += " "
 		}
 
-		if tool == m.selectedTool {
+		if t.Name() == m.selectedTool {
 			content.WriteString(selectedStyle.Render(line))
 		} else {
 			content.WriteString(line)
 		}
-		if i < len(tools)-1 {
+		if i < len(toolRegistry)-1 {
 			content.WriteString("\n")
 		}
 	}

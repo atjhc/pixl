@@ -96,8 +96,8 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		} else if m.showToolPicker {
-			if idx < len(tools) {
-				m.setTool(tools[idx])
+			if idx < len(toolRegistry) {
+				m.setTool(toolRegistry[idx].Name())
 				return m, nil
 			}
 		}
@@ -207,8 +207,7 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.openMenu((m.activeMenu() + 1) % menuCount)
 		return m, nil
 	case "enter":
-		if m.selectedTool == "Ellipse" {
-			m.circleMode = !m.circleMode
+		if m.tool().OnKeyPress(m, "enter") {
 			return m, nil
 		} else if m.showCharPicker {
 			m.showCharPicker = false
@@ -256,7 +255,7 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		} else if m.showToolPicker {
 			idx := m.findSelectedToolIndex()
 			if idx > 0 {
-				m.setTool(tools[idx-1])
+				m.setTool(toolRegistry[idx-1].Name())
 			}
 			return m, nil
 		}
@@ -291,8 +290,8 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		} else if m.showToolPicker {
 			idx := m.findSelectedToolIndex()
-			if idx < len(tools)-1 {
-				m.setTool(tools[idx+1])
+			if idx < len(toolRegistry)-1 {
+				m.setTool(toolRegistry[idx+1].Name())
 			}
 			return m, nil
 		}
@@ -410,16 +409,13 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 				}
 			}
 		} else if m.showToolPicker {
-			pickerHeight := len(tools) + pickerBorderWidth
+			pickerHeight := len(toolRegistry) + pickerBorderWidth
 			pickerTop := controlBarHeight
 			pickerLeft := m.toolbarToolItemX - pickerContentOffset
 
 			maxToolLen := 0
-			for _, t := range tools {
-				name := t
-				if t == "Ellipse" && m.circleMode {
-					name = "Circle"
-				}
+			for _, t := range toolRegistry {
+				name := t.DisplayName(m)
 				if len(name) > maxToolLen {
 					maxToolLen = len(name)
 				}
@@ -429,8 +425,8 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			if msg.Y >= pickerTop && msg.Y < pickerTop+pickerHeight &&
 				msg.X >= pickerLeft && msg.X < pickerLeft+pickerWidth {
 				toolIdx := msg.Y - pickerTop - 1
-				if toolIdx >= 0 && toolIdx < len(tools) {
-					m.setTool(tools[toolIdx])
+				if toolIdx >= 0 && toolIdx < len(toolRegistry) {
+					m.setTool(toolRegistry[toolIdx].Name())
 					return m, nil
 				}
 			}
@@ -479,40 +475,14 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		m.canvasBeforeStroke = m.canvas.Copy()
 		m.startX = cx
 		m.startY = cy
-		if m.selectedTool == "Rectangle" || m.selectedTool == "Ellipse" || m.selectedTool == "Line" || m.selectedTool == "Select" {
-			m.showPreview = true
-			m.previewEndX = cx
-			m.previewEndY = cy
-			if m.selectedTool == "Select" {
-				m.hasSelection = false
-			}
-			if m.selectedTool == "Ellipse" {
-				m.previewPoints = m.getCirclePoints(m.startY, m.startX, m.previewEndY, m.previewEndX, m.circleMode || m.optionKeyHeld)
-			}
-			if m.selectedTool == "Line" {
-				m.previewPoints = getLinePoints(m.startY, m.startX, m.previewEndY, m.previewEndX)
-			}
-		}
+		m.tool().OnPress(m, cy, cx)
 	}
 
 	// Handle drag events
 	if (msg.Type == tea.MouseLeft || msg.Type == tea.MouseMotion) && m.mouseDown {
 		canvasX, canvasY := m.screenToCanvas(msg.X, msg.Y)
 
-		if m.selectedTool == "Rectangle" || m.selectedTool == "Ellipse" || m.selectedTool == "Line" || m.selectedTool == "Select" {
-			clampedY, clampedX := m.clampToCanvas(canvasY, canvasX)
-
-			m.previewEndX = clampedX
-			m.previewEndY = clampedY
-			if m.selectedTool == "Ellipse" {
-				m.previewPoints = m.getCirclePoints(m.startY, m.startX, m.previewEndY, m.previewEndX, m.circleMode || m.optionKeyHeld)
-			}
-			if m.selectedTool == "Line" {
-				m.previewPoints = getLinePoints(m.startY, m.startX, m.previewEndY, m.previewEndX)
-			}
-		} else if m.selectedTool == "Point" && canvasY >= 0 && canvasY < m.canvas.height && canvasX >= 0 && canvasX < m.canvas.width {
-			m.canvas.Set(canvasY, canvasX, m.selectedChar, m.foregroundColor, m.backgroundColor)
-		}
+		m.tool().OnDrag(m, canvasY, canvasX)
 	}
 
 	// Handle mouse release (end of stroke)
@@ -524,35 +494,12 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		canvasX, canvasY := m.screenToCanvas(msg.X, msg.Y)
 		clampedY, clampedX := m.clampToCanvas(canvasY, canvasX)
 
-		if m.selectedTool == "Rectangle" {
-			m.drawRectangle(m.startY, m.startX, clampedY, clampedX)
-		} else if m.selectedTool == "Ellipse" {
-			m.drawCircle(m.startY, m.startX, clampedY, clampedX, m.circleMode || m.optionKeyHeld)
-		} else if m.selectedTool == "Line" {
-			m.drawLine(m.startY, m.startX, clampedY, clampedX)
-		} else if m.selectedTool == "Fill" {
-			m.floodFill(clampedY, clampedX)
-		} else if m.selectedTool == "Select" {
-			dy := m.startY - clampedY
-			dx := m.startX - clampedX
-			if dy < 0 {
-				dy = -dy
-			}
-			if dx < 0 {
-				dx = -dx
-			}
-			if dy > 1 && dx > 1 {
-				m.hasSelection = true
-				m.selectionStartY = m.startY
-				m.selectionStartX = m.startX
-				m.selectionEndY = clampedY
-				m.selectionEndX = clampedX
-			}
-		}
+		tool := m.tool()
+		tool.OnRelease(m, clampedY, clampedX)
 
 		m.optionKeyHeld = false
 
-		if m.selectedTool != "Select" && !m.canvas.Equals(m.canvasBeforeStroke) {
+		if tool.ModifiesCanvas() && !m.canvas.Equals(m.canvasBeforeStroke) {
 			m.saveToHistory()
 		}
 	}

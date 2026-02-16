@@ -194,46 +194,9 @@ func (m *model) View() string {
 }
 
 func (m *model) renderCellAt(row, col int) string {
-	if m.showPreview && m.selectedTool == "Rectangle" {
-		minY, minX, maxY, maxX := normalizeRect(m.startY, m.startX, m.previewEndY, m.previewEndX)
-		if row >= minY && row <= maxY && col >= minX && col <= maxX {
-			if row == minY || row == maxY || col == minX || col == maxX {
-				return m.styledChar()
-			}
-		}
-	} else if m.showPreview && m.selectedTool == "Ellipse" {
-		if m.previewPoints[[2]int{row, col}] {
-			return m.styledChar()
-		}
-	} else if m.showPreview && m.selectedTool == "Line" {
-		if m.previewPoints[[2]int{row, col}] {
-			return m.styledChar()
-		}
-	} else if m.showPreview && m.selectedTool == "Select" {
-		minY, minX, maxY, maxX := normalizeRect(m.startY, m.startX, m.previewEndY, m.previewEndX)
-		hasWidth := minX != maxX
-		hasHeight := minY != maxY
-		if hasWidth && hasHeight && row >= minY && row <= maxY && col >= minX && col <= maxX {
-			if row == minY || row == maxY || col == minX || col == maxX {
-				dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-				var char string
-				if minY == maxY && minX == maxX {
-					char = "□"
-				} else if row == minY && col == minX {
-					char = "┌"
-				} else if row == minY && col == maxX {
-					char = "┐"
-				} else if row == maxY && col == minX {
-					char = "└"
-				} else if row == maxY && col == maxX {
-					char = "┘"
-				} else if row == minY || row == maxY {
-					char = "┈"
-				} else {
-					char = "┊"
-				}
-				return dimStyle.Render(char)
-			}
+	if m.showPreview {
+		if rendered, ok := m.tool().RenderPreview(m, row, col); ok {
+			return rendered
 		}
 	}
 
@@ -268,8 +231,8 @@ func (m *model) renderCellAt(row, col int) string {
 		row >= 0 && row < m.canvas.height && col >= 0 && col < m.canvas.width {
 		ghostStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 		cursorChar := m.selectedChar
-		if m.selectedTool != "Point" {
-			cursorChar = "┼"
+		if c := m.tool().CursorChar(); c != "" {
+			cursorChar = c
 		}
 		return ghostStyle.Render(cursorChar)
 	}

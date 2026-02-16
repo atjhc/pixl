@@ -96,10 +96,7 @@ func (m *model) renderControlBar() string {
 	currentX += 1 // separator
 
 	// Tool button
-	toolName := m.selectedTool
-	if m.selectedTool == "Ellipse" && m.circleMode {
-		toolName = "Circle"
-	}
+	toolName := m.tool().DisplayName(m)
 	toolText := fmt.Sprintf("%sT%sool: %s", underlineOn, underlineOff, toolName)
 	var toolButton string
 	if m.showToolPicker {
