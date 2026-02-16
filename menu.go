@@ -79,11 +79,10 @@ func (m *model) toolPickerItems() []toolPickerItem {
 		selected: isDrawingTool(m.selectedTool),
 	})
 
-	// Box — icon is the depiction, name is "Style Box"
 	s := boxStyles[m.boxStyle]
 	items = append(items, toolPickerItem{
 		icon:     s.tl + s.h + s.tr,
-		name:     s.name + " Box",
+		name:     "Box",
 		selected: m.selectedTool == "Box",
 	})
 

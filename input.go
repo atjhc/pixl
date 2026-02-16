@@ -373,7 +373,7 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-			shapesPickerLeft := categoryPickerLeft + categoryPickerWidth
+			shapesPickerLeft := categoryPickerLeft + categoryPickerWidth - 1
 			shapesPickerWidth := 3 + pickerBorderWidth
 
 			shapesPickerHeight := len(characterGroups[m.selectedCategory].chars) + pickerBorderWidth
@@ -474,7 +474,7 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			}
 
 			if m.toolHasSubmenu() {
-				submenuLeft := pickerLeft + pickerWidth
+				submenuLeft := pickerLeft + pickerWidth - 1
 				popup2 := m.renderToolSubmenuPicker()
 				popup2Lines := strings.Split(popup2, "\n")
 				submenuWidth := 0

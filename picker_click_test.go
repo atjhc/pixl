@@ -54,7 +54,7 @@ func testShapesPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, 
 			if len(popupLines) > 0 {
 				categoryWidth = lipgloss.Width(popupLines[0])
 			}
-			popup2X := popupX + categoryWidth
+			popup2X := popupX + categoryWidth - 1
 
 			clickX := popup2X + 2
 
@@ -132,7 +132,7 @@ func TestDrawingToolPickerClickTargets(t *testing.T) {
 		popup2StartY = 0
 	}
 
-	submenuLeft := toolPopupX + toolPickerWidth
+	submenuLeft := toolPopupX + toolPickerWidth - 1
 	submenuTop := controlBarHeight + popup2StartY
 
 	for optIdx, opt := range drawingToolOptions {
@@ -209,7 +209,7 @@ func TestBoxStylePickerClickTargets(t *testing.T) {
 		popup2StartY = 0
 	}
 
-	stylePickerLeft := toolPopupX + toolPickerWidth
+	stylePickerLeft := toolPopupX + toolPickerWidth - 1
 	stylePickerTop := controlBarHeight + popup2StartY
 
 	for styleIdx, bs := range boxStyles {

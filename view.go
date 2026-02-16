@@ -52,7 +52,8 @@ func (m *model) View() string {
 		if len(popupLines) > 0 {
 			categoryWidth = lipgloss.Width(popupLines[0])
 		}
-		popup2X = popupX + categoryWidth
+		popupLines, popup2Lines = mergePopupBorders(popupLines, popup2Lines, popup2StartY-popupStartY)
+		popup2X = popupX + categoryWidth - 1
 	} else if m.showFgPicker {
 		popup = m.renderColorPicker("Foreground")
 		popupLines = strings.Split(popup, "\n")
@@ -84,7 +85,8 @@ func (m *model) View() string {
 			if len(popupLines) > 0 {
 				toolPickerWidth = lipgloss.Width(popupLines[0])
 			}
-			popup2X = popupX + toolPickerWidth
+			popupLines, popup2Lines = mergePopupBorders(popupLines, popup2Lines, popup2StartY-popupStartY)
+			popup2X = popupX + toolPickerWidth - 1
 		}
 	}
 

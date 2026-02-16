@@ -109,7 +109,7 @@ var boxStyles = []boxStyle{
 func (t BoxTool) Name() string { return "Box" }
 func (t BoxTool) DisplayName(m *model) string {
 	s := boxStyles[m.boxStyle]
-	return s.tl + s.h + s.tr + " " + s.name + " Box"
+	return s.tl + s.h + s.tr + " Box"
 }
 func (t BoxTool) CursorChar(m *model) string  { return boxStyles[m.boxStyle].tl }
 func (t BoxTool) ModifiesCanvas() bool        { return true }

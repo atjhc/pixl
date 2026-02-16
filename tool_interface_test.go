@@ -106,13 +106,13 @@ func TestBoxToolDisplayName(t *testing.T) {
 	m.selectedTool = "Box"
 
 	m.boxStyle = 0
-	if got := m.tool().DisplayName(m); got != "┌─┐ Single Box" {
-		t.Errorf("DisplayName style 0 = %q, want %q", got, "┌─┐ Single Box")
+	if got := m.tool().DisplayName(m); got != "┌─┐ Box" {
+		t.Errorf("DisplayName style 0 = %q, want %q", got, "┌─┐ Box")
 	}
 
 	m.boxStyle = 1
-	if got := m.tool().DisplayName(m); got != "╔═╗ Double Box" {
-		t.Errorf("DisplayName style 1 = %q, want %q", got, "╔═╗ Double Box")
+	if got := m.tool().DisplayName(m); got != "╔═╗ Box" {
+		t.Errorf("DisplayName style 1 = %q, want %q", got, "╔═╗ Box")
 	}
 }
 
@@ -182,8 +182,8 @@ func TestToolPickerItems(t *testing.T) {
 	if items[1].icon != "┌─┐" {
 		t.Errorf("item 1 icon = %q, want ┌─┐", items[1].icon)
 	}
-	if items[1].name != "Single Box" {
-		t.Errorf("item 1 name = %q, want Single Box", items[1].name)
+	if items[1].name != "Box" {
+		t.Errorf("item 1 name = %q, want Box", items[1].name)
 	}
 	if items[2].name != "Fill" {
 		t.Errorf("item 2 name = %q, want Fill", items[2].name)
