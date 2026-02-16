@@ -340,9 +340,13 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			shapesPickerWidth := 3 + pickerBorderWidth
 
 			shapesPickerHeight := len(characterGroups[m.selectedCategory].chars) + pickerBorderWidth
+			screenRows := m.height - controlBarHeight
+			if !m.hasFixedSize() {
+				screenRows = m.canvas.height
+			}
 			shapesCanvasY := m.selectedCategory
-			if shapesCanvasY+shapesPickerHeight > m.canvas.height {
-				shapesCanvasY = m.canvas.height - shapesPickerHeight
+			if shapesCanvasY+shapesPickerHeight > screenRows {
+				shapesCanvasY = screenRows - shapesPickerHeight
 			}
 			if shapesCanvasY < 0 {
 				shapesCanvasY = 0
