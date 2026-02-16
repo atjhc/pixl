@@ -39,11 +39,16 @@ func TestToolCursorChar(t *testing.T) {
 		t.Errorf("Point CursorChar = %q, want empty", got)
 	}
 
-	for _, name := range []string{"Rectangle", "Ellipse", "Line", "Fill", "Select"} {
+	for _, name := range []string{"Rectangle", "Ellipse", "Line", "Fill"} {
 		m.selectedTool = name
-		if got := m.tool().CursorChar(); got != "┼" {
-			t.Errorf("%s CursorChar = %q, want ┼", name, got)
+		if got := m.tool().CursorChar(); got != "" {
+			t.Errorf("%s CursorChar = %q, want empty (use selected char)", name, got)
 		}
+	}
+
+	m.selectedTool = "Select"
+	if got := m.tool().CursorChar(); got != "┼" {
+		t.Errorf("Select CursorChar = %q, want ┼", got)
 	}
 }
 

@@ -59,7 +59,7 @@ type RectangleTool struct{}
 
 func (t RectangleTool) Name() string                { return "Rectangle" }
 func (t RectangleTool) DisplayName(_ *model) string { return "Rectangle" }
-func (t RectangleTool) CursorChar() string           { return "┼" }
+func (t RectangleTool) CursorChar() string           { return "" }
 func (t RectangleTool) ModifiesCanvas() bool         { return true }
 func (t RectangleTool) OnKeyPress(_ *model, _ string) bool { return false }
 
@@ -99,7 +99,7 @@ func (t EllipseTool) DisplayName(m *model) string {
 	}
 	return "Ellipse"
 }
-func (t EllipseTool) CursorChar() string   { return "┼" }
+func (t EllipseTool) CursorChar() string   { return "" }
 func (t EllipseTool) ModifiesCanvas() bool { return true }
 
 func (t EllipseTool) OnKeyPress(m *model, key string) bool {
@@ -140,7 +140,7 @@ type LineTool struct{}
 
 func (t LineTool) Name() string                { return "Line" }
 func (t LineTool) DisplayName(_ *model) string { return "Line" }
-func (t LineTool) CursorChar() string           { return "┼" }
+func (t LineTool) CursorChar() string           { return "" }
 func (t LineTool) ModifiesCanvas() bool         { return true }
 func (t LineTool) OnKeyPress(_ *model, _ string) bool { return false }
 
@@ -174,7 +174,7 @@ type FillTool struct{}
 
 func (t FillTool) Name() string                { return "Fill" }
 func (t FillTool) DisplayName(_ *model) string { return "Fill" }
-func (t FillTool) CursorChar() string           { return "┼" }
+func (t FillTool) CursorChar() string           { return "" }
 func (t FillTool) ModifiesCanvas() bool         { return true }
 func (t FillTool) OnKeyPress(_ *model, _ string) bool { return false }
 func (t FillTool) OnPress(_ *model, _, _ int)          {}

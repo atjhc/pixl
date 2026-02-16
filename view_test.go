@@ -164,8 +164,8 @@ func TestCursorShownWithMenuOpen(t *testing.T) {
 	}
 }
 
-func TestCrosshairCursorForNonPointTools(t *testing.T) {
-	for _, tool := range []string{"Rectangle", "Ellipse", "Fill", "Select"} {
+func TestCursorForPaintingTools(t *testing.T) {
+	for _, tool := range []string{"Rectangle", "Ellipse", "Fill", "Line"} {
 		t.Run(tool, func(t *testing.T) {
 			m := &model{
 				canvas:       NewCanvas(10, 10),
@@ -177,13 +177,29 @@ func TestCrosshairCursorForNonPointTools(t *testing.T) {
 
 			got := m.renderCellAt(3, 5)
 
-			if !strings.Contains(got, "┼") {
-				t.Errorf("tool %s should show crosshair cursor, got %q", tool, got)
-			}
-			if strings.Contains(got, "●") {
-				t.Errorf("tool %s should not show selected char, got %q", tool, got)
+			if !strings.Contains(got, "●") {
+				t.Errorf("tool %s should show selected char as cursor, got %q", tool, got)
 			}
 		})
+	}
+}
+
+func TestCrosshairCursorForSelectTool(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedChar: "●",
+		selectedTool: "Select",
+		hoverRow:     3,
+		hoverCol:     5,
+	}
+
+	got := m.renderCellAt(3, 5)
+
+	if !strings.Contains(got, "┼") {
+		t.Errorf("Select tool should show crosshair cursor, got %q", got)
+	}
+	if strings.Contains(got, "●") {
+		t.Errorf("Select tool should not show selected char, got %q", got)
 	}
 }
 
