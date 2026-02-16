@@ -38,6 +38,8 @@ func (m *model) renderControlBar() string {
 	underlineOn := "\x1b[4m"
 	underlineOff := "\x1b[24m"
 
+	sep := " "
+
 	currentX := 0
 
 	// Shape button
@@ -51,6 +53,7 @@ func (m *model) renderControlBar() string {
 	m.toolbarShapeX = currentX + toolbarButtonPadding
 	m.toolbarShapeItemX = currentX + 9
 	currentX += lipgloss.Width(shapeButton)
+	currentX += 1 // separator
 
 	// Foreground color button
 	var fgSwatch string
@@ -62,13 +65,14 @@ func (m *model) renderControlBar() string {
 	fgText := fmt.Sprintf("%sF%soreground: %s", underlineOn, underlineOff, fgSwatch)
 	var fgButton string
 	if m.showFgPicker {
-		fgButton = highlightStyle.Render(fgText)
+		fgButton = highlightStyle.Copy().Padding(0, 0, 0, 1).Render(fgText)
 	} else {
-		fgButton = baseStyle.Render(fgText)
+		fgButton = baseStyle.Copy().Padding(0, 0, 0, 1).Render(fgText)
 	}
 	m.toolbarForegroundX = currentX + toolbarButtonPadding
 	m.toolbarForegroundItemX = currentX + 13
 	currentX += lipgloss.Width(fgButton)
+	currentX += 1 // separator
 
 	// Background color button
 	var bgSwatch string
@@ -80,13 +84,14 @@ func (m *model) renderControlBar() string {
 	bgText := fmt.Sprintf("%sB%sackground: %s", underlineOn, underlineOff, bgSwatch)
 	var bgButton string
 	if m.showBgPicker {
-		bgButton = highlightStyle.Render(bgText)
+		bgButton = highlightStyle.Copy().Padding(0, 0, 0, 1).Render(bgText)
 	} else {
-		bgButton = baseStyle.Render(bgText)
+		bgButton = baseStyle.Copy().Padding(0, 0, 0, 1).Render(bgText)
 	}
 	m.toolbarBackgroundX = currentX + toolbarButtonPadding
 	m.toolbarBackgroundItemX = currentX + 13
 	currentX += lipgloss.Width(bgButton)
+	currentX += 1 // separator
 
 	// Tool button
 	toolName := m.selectedTool
@@ -111,14 +116,7 @@ func (m *model) renderControlBar() string {
 		modeIndicator = baseStyle.Render(modeText)
 	}
 
-	var barContent string
-	if modeIndicator != "" {
-		barContent = fmt.Sprintf("%s%s%s%s%s",
-			shapeButton, fgButton, bgButton, toolButton, modeIndicator)
-	} else {
-		barContent = fmt.Sprintf("%s%s%s%s",
-			shapeButton, fgButton, bgButton, toolButton)
-	}
+	barContent := shapeButton + sep + fgButton + sep + bgButton + sep + toolButton + sep + modeIndicator
 
 	barStyle := lipgloss.NewStyle().
 		Background(bgColor).
