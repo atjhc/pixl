@@ -189,6 +189,68 @@ func TestDrawCircleSetsCanvas(t *testing.T) {
 	}
 }
 
+func TestGetLinePointsHorizontal(t *testing.T) {
+	points := getLinePoints(3, 1, 3, 5)
+
+	for x := 1; x <= 5; x++ {
+		if !points[[2]int{3, x}] {
+			t.Errorf("missing point (3,%d) in horizontal line", x)
+		}
+	}
+	if len(points) != 5 {
+		t.Errorf("horizontal line: got %d points, want 5", len(points))
+	}
+}
+
+func TestGetLinePointsVertical(t *testing.T) {
+	points := getLinePoints(1, 3, 5, 3)
+
+	for y := 1; y <= 5; y++ {
+		if !points[[2]int{y, 3}] {
+			t.Errorf("missing point (%d,3) in vertical line", y)
+		}
+	}
+	if len(points) != 5 {
+		t.Errorf("vertical line: got %d points, want 5", len(points))
+	}
+}
+
+func TestGetLinePointsDiagonal(t *testing.T) {
+	points := getLinePoints(0, 0, 4, 4)
+
+	for i := 0; i <= 4; i++ {
+		if !points[[2]int{i, i}] {
+			t.Errorf("missing point (%d,%d) in diagonal line", i, i)
+		}
+	}
+	if len(points) != 5 {
+		t.Errorf("diagonal line: got %d points, want 5", len(points))
+	}
+}
+
+func TestGetLinePointsSinglePoint(t *testing.T) {
+	points := getLinePoints(2, 3, 2, 3)
+
+	if len(points) != 1 {
+		t.Errorf("single point line: got %d points, want 1", len(points))
+	}
+	if !points[[2]int{2, 3}] {
+		t.Error("single point line should contain the point")
+	}
+}
+
+func TestDrawLineSetsCanvas(t *testing.T) {
+	m := newTestModel(10, 10)
+	m.drawLine(1, 1, 1, 5)
+
+	for x := 1; x <= 5; x++ {
+		cell := m.canvas.Get(1, x)
+		if cell == nil || cell.char != "#" {
+			t.Errorf("drawLine: cell(1,%d) not set", x)
+		}
+	}
+}
+
 func TestGetEllipsePointsVerticalLine(t *testing.T) {
 	m := newTestModel(10, 10)
 	// rx=0 triggers the vertical line branch

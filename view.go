@@ -205,6 +205,10 @@ func (m *model) renderCellAt(row, col int) string {
 		if m.previewPoints[[2]int{row, col}] {
 			return m.styledChar()
 		}
+	} else if m.showPreview && m.selectedTool == "Line" {
+		if m.previewPoints[[2]int{row, col}] {
+			return m.styledChar()
+		}
 	} else if m.showPreview && m.selectedTool == "Select" {
 		minY, minX, maxY, maxX := normalizeRect(m.startY, m.startX, m.previewEndY, m.previewEndX)
 		hasWidth := minX != maxX

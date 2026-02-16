@@ -479,7 +479,7 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		m.canvasBeforeStroke = m.canvas.Copy()
 		m.startX = cx
 		m.startY = cy
-		if m.selectedTool == "Rectangle" || m.selectedTool == "Ellipse" || m.selectedTool == "Select" {
+		if m.selectedTool == "Rectangle" || m.selectedTool == "Ellipse" || m.selectedTool == "Line" || m.selectedTool == "Select" {
 			m.showPreview = true
 			m.previewEndX = cx
 			m.previewEndY = cy
@@ -489,6 +489,9 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			if m.selectedTool == "Ellipse" {
 				m.previewPoints = m.getCirclePoints(m.startY, m.startX, m.previewEndY, m.previewEndX, m.circleMode || m.optionKeyHeld)
 			}
+			if m.selectedTool == "Line" {
+				m.previewPoints = getLinePoints(m.startY, m.startX, m.previewEndY, m.previewEndX)
+			}
 		}
 	}
 
@@ -496,13 +499,16 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if (msg.Type == tea.MouseLeft || msg.Type == tea.MouseMotion) && m.mouseDown {
 		canvasX, canvasY := m.screenToCanvas(msg.X, msg.Y)
 
-		if m.selectedTool == "Rectangle" || m.selectedTool == "Ellipse" || m.selectedTool == "Select" {
+		if m.selectedTool == "Rectangle" || m.selectedTool == "Ellipse" || m.selectedTool == "Line" || m.selectedTool == "Select" {
 			clampedY, clampedX := m.clampToCanvas(canvasY, canvasX)
 
 			m.previewEndX = clampedX
 			m.previewEndY = clampedY
 			if m.selectedTool == "Ellipse" {
 				m.previewPoints = m.getCirclePoints(m.startY, m.startX, m.previewEndY, m.previewEndX, m.circleMode || m.optionKeyHeld)
+			}
+			if m.selectedTool == "Line" {
+				m.previewPoints = getLinePoints(m.startY, m.startX, m.previewEndY, m.previewEndX)
 			}
 		} else if m.selectedTool == "Point" && canvasY >= 0 && canvasY < m.canvas.height && canvasX >= 0 && canvasX < m.canvas.width {
 			m.canvas.Set(canvasY, canvasX, m.selectedChar, m.foregroundColor, m.backgroundColor)
@@ -522,6 +528,8 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			m.drawRectangle(m.startY, m.startX, clampedY, clampedX)
 		} else if m.selectedTool == "Ellipse" {
 			m.drawCircle(m.startY, m.startX, clampedY, clampedX, m.circleMode || m.optionKeyHeld)
+		} else if m.selectedTool == "Line" {
+			m.drawLine(m.startY, m.startX, clampedY, clampedX)
 		} else if m.selectedTool == "Fill" {
 			m.floodFill(clampedY, clampedX)
 		} else if m.selectedTool == "Select" {

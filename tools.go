@@ -122,6 +122,53 @@ func (m *model) floodFill(row, col int) {
 	}
 }
 
+func getLinePoints(y1, x1, y2, x2 int) map[[2]int]bool {
+	points := make(map[[2]int]bool)
+
+	dy := y2 - y1
+	dx := x2 - x1
+	if dy < 0 {
+		dy = -dy
+	}
+	if dx < 0 {
+		dx = -dx
+	}
+
+	sx := 1
+	if x1 > x2 {
+		sx = -1
+	}
+	sy := 1
+	if y1 > y2 {
+		sy = -1
+	}
+
+	err := dx - dy
+	for {
+		points[[2]int{y1, x1}] = true
+		if x1 == x2 && y1 == y2 {
+			break
+		}
+		e2 := 2 * err
+		if e2 > -dy {
+			err -= dy
+			x1 += sx
+		}
+		if e2 < dx {
+			err += dx
+			y1 += sy
+		}
+	}
+
+	return points
+}
+
+func (m *model) drawLine(y1, x1, y2, x2 int) {
+	for pt := range getLinePoints(y1, x1, y2, x2) {
+		m.canvas.Set(pt[0], pt[1], m.selectedChar, m.foregroundColor, m.backgroundColor)
+	}
+}
+
 func getEllipsePoints(centerY, centerX, ry, rx int) map[[2]int]bool {
 	points := make(map[[2]int]bool)
 

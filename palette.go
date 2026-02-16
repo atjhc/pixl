@@ -34,6 +34,7 @@ var tools = []string{
 	"Point",
 	"Rectangle",
 	"Ellipse",
+	"Line",
 	"Fill",
 	"Select",
 }
