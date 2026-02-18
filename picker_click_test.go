@@ -9,7 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func testShapesPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, fixedW, fixedH int) {
+func testGlyphsPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, fixedW, fixedH int) {
 	t.Helper()
 	for catIdx, group := range characterGroups {
 		t.Run(fmt.Sprintf("category_%d_%s", catIdx, group.name), func(t *testing.T) {
@@ -29,12 +29,12 @@ func testShapesPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, 
 				fixedHeight:      fixedH,
 			}
 
-			// Calculate where the view renders the shapes panel
+			// Calculate where the view renders the glyphs panel
 			popup := m.renderCategoryPicker()
 			popupLines := strings.Split(popup, "\n")
-			popupX := m.toolbarShapeItemX - pickerContentOffset
+			popupX := m.toolbarGlyphItemX - pickerContentOffset
 
-			popup2 := m.renderShapesPicker()
+			popup2 := m.renderGlyphsPicker()
 			popup2Lines := strings.Split(popup2, "\n")
 
 			screenRows := m.height - controlBarHeight
@@ -58,8 +58,8 @@ func testShapesPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, 
 
 			clickX := popup2X + 2
 
-			for shapeIdx, expectedChar := range group.chars {
-				clickY := controlBarHeight + popup2StartY + 1 + shapeIdx
+			for glyphIdx, expectedChar := range group.chars {
+				clickY := controlBarHeight + popup2StartY + 1 + glyphIdx
 
 				m2 := &model{
 					canvas:           NewCanvas(canvasW, canvasH),
@@ -86,8 +86,8 @@ func testShapesPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, 
 				m2.handleMouse(msg)
 
 				if m2.selectedChar != expectedChar {
-					t.Errorf("shape[%d] at screen (%d,%d): got %q, want %q (popup2StartY=%d)",
-						shapeIdx, clickX, clickY, m2.selectedChar, expectedChar, popup2StartY)
+					t.Errorf("glyph[%d] at screen (%d,%d): got %q, want %q (popup2StartY=%d)",
+						glyphIdx, clickX, clickY, m2.selectedChar, expectedChar, popup2StartY)
 				}
 			}
 		})
@@ -244,17 +244,17 @@ func TestBoxStylePickerClickTargets(t *testing.T) {
 	}
 }
 
-func TestShapesPickerClickTargets(t *testing.T) {
+func TestGlyphsPickerClickTargets(t *testing.T) {
 	t.Run("non-fixed 80x30", func(t *testing.T) {
-		testShapesPickerClickTargets(t, 80, 30, 80, 31, 0, 0)
+		testGlyphsPickerClickTargets(t, 80, 30, 80, 31, 0, 0)
 	})
 	t.Run("fixed 20x20 in 80x40", func(t *testing.T) {
-		testShapesPickerClickTargets(t, 20, 20, 80, 40, 20, 20)
+		testGlyphsPickerClickTargets(t, 20, 20, 80, 40, 20, 20)
 	})
 	t.Run("fixed 10x10 in 80x30", func(t *testing.T) {
-		testShapesPickerClickTargets(t, 10, 10, 80, 30, 10, 10)
+		testGlyphsPickerClickTargets(t, 10, 10, 80, 30, 10, 10)
 	})
 	t.Run("small non-fixed 80x20", func(t *testing.T) {
-		testShapesPickerClickTargets(t, 80, 20, 80, 21, 0, 0)
+		testGlyphsPickerClickTargets(t, 80, 20, 80, 21, 0, 0)
 	})
 }

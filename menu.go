@@ -20,8 +20,8 @@ func (m *model) openMenu(idx int) {
 	m.showFgPicker = idx == 1
 	m.showBgPicker = idx == 2
 	m.showToolPicker = idx == 3
-	m.showingShapes = idx == 0
-	m.shapesFocusOnPanel = false
+	m.showingGlyphs = idx == 0
+	m.glyphsFocusOnPanel = false
 	m.toolPickerFocusOnStyle = false
 	if idx == 0 {
 		m.selectedCategory = m.findSelectedCharCategory()
@@ -44,8 +44,8 @@ func (m *model) closeMenus() {
 	m.showFgPicker = false
 	m.showBgPicker = false
 	m.showToolPicker = false
-	m.showingShapes = false
-	m.shapesFocusOnPanel = false
+	m.showingGlyphs = false
+	m.glyphsFocusOnPanel = false
 	m.toolPickerFocusOnStyle = false
 }
 

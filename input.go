@@ -73,12 +73,12 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "1", "2", "3", "4", "5", "6", "7", "8", "9":
 		idx := int(msg.String()[0] - '1')
 
-		if m.showCharPicker && !m.shapesFocusOnPanel {
+		if m.showCharPicker && !m.glyphsFocusOnPanel {
 			if idx < len(characterGroups) {
 				m.selectedCategory = idx
 				return m, nil
 			}
-		} else if m.showCharPicker && m.shapesFocusOnPanel {
+		} else if m.showCharPicker && m.glyphsFocusOnPanel {
 			if m.selectedCategory >= 0 && m.selectedCategory < len(characterGroups) {
 				chars := characterGroups[m.selectedCategory].chars
 				if idx < len(chars) {
@@ -129,7 +129,7 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "p":
 		m.paste()
 		return m, nil
-	case "s":
+	case "g":
 		if m.showCharPicker {
 			m.closeMenus()
 		} else {
@@ -174,8 +174,8 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case "esc":
-		if m.showCharPicker && m.shapesFocusOnPanel {
-			m.shapesFocusOnPanel = false
+		if m.showCharPicker && m.glyphsFocusOnPanel {
+			m.glyphsFocusOnPanel = false
 			return m, nil
 		}
 		if m.showToolPicker && m.toolPickerFocusOnStyle {
@@ -187,7 +187,7 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.showBgPicker = false
 		m.showToolPicker = false
 		m.hasSelection = false
-		m.shapesFocusOnPanel = false
+		m.glyphsFocusOnPanel = false
 		m.toolPickerFocusOnStyle = false
 		return m, nil
 	case "left":
@@ -195,8 +195,8 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.openMenu(m.lastMenu)
 			return m, nil
 		}
-		if m.showCharPicker && m.shapesFocusOnPanel {
-			m.shapesFocusOnPanel = false
+		if m.showCharPicker && m.glyphsFocusOnPanel {
+			m.glyphsFocusOnPanel = false
 			return m, nil
 		}
 		if m.showToolPicker && m.toolPickerFocusOnStyle {
@@ -210,8 +210,8 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.openMenu(m.lastMenu)
 			return m, nil
 		}
-		if m.showCharPicker && !m.shapesFocusOnPanel {
-			m.shapesFocusOnPanel = true
+		if m.showCharPicker && !m.glyphsFocusOnPanel {
+			m.glyphsFocusOnPanel = true
 			if m.selectedCategory >= 0 && m.selectedCategory < len(characterGroups) {
 				currentIdx := m.findSelectedCharIndexInCategory(m.selectedCategory)
 				if currentIdx == 0 && m.selectedChar != characterGroups[m.selectedCategory].chars[0] {
@@ -235,7 +235,7 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		} else if m.showCharPicker {
 			m.showCharPicker = false
-			m.showingShapes = false
+			m.showingGlyphs = false
 			return m, nil
 		} else if m.showFgPicker {
 			m.showFgPicker = false
@@ -253,7 +253,7 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if m.showCharPicker {
-			if m.shapesFocusOnPanel {
+			if m.glyphsFocusOnPanel {
 				idx := m.findSelectedCharIndexInCategory(m.selectedCategory)
 				if idx > 0 {
 					m.selectedChar = characterGroups[m.selectedCategory].chars[idx-1]
@@ -295,7 +295,7 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if m.showCharPicker {
-			if m.shapesFocusOnPanel {
+			if m.glyphsFocusOnPanel {
 				idx := m.findSelectedCharIndexInCategory(m.selectedCategory)
 				if idx < len(characterGroups[m.selectedCategory].chars)-1 {
 					m.selectedChar = characterGroups[m.selectedCategory].chars[idx+1]
@@ -348,7 +348,7 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	// Handle popup and menu clicks (only on initial click, not during drag)
 	if msg.Type == tea.MouseLeft && !m.mouseDown {
 		if m.showCharPicker {
-			categoryPickerLeft := m.toolbarShapeItemX - pickerContentOffset
+			categoryPickerLeft := m.toolbarGlyphItemX - pickerContentOffset
 			maxCategoryWidth := 0
 			for _, group := range characterGroups {
 				nameWidth := len(group.name) + 2
@@ -367,35 +367,35 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 				if row >= 0 && row < len(characterGroups) {
 					if msg.X >= categoryPickerLeft+1 && msg.X < categoryPickerLeft+categoryPickerWidth-1 {
 						m.selectedCategory = row
-						m.shapesFocusOnPanel = false
+						m.glyphsFocusOnPanel = false
 						return m, nil
 					}
 				}
 			}
 
-			shapesPickerLeft := categoryPickerLeft + categoryPickerWidth - 1
-			shapesPickerWidth := 3 + pickerBorderWidth
+			glyphsPickerLeft := categoryPickerLeft + categoryPickerWidth - 1
+			glyphsPickerWidth := 3 + pickerBorderWidth
 
-			shapesPickerHeight := len(characterGroups[m.selectedCategory].chars) + pickerBorderWidth
+			glyphsPickerHeight := len(characterGroups[m.selectedCategory].chars) + pickerBorderWidth
 			screenRows := m.height - controlBarHeight
 			if !m.hasFixedSize() {
 				screenRows = m.canvas.height
 			}
-			shapesCanvasY := m.selectedCategory
-			if shapesCanvasY+shapesPickerHeight > screenRows {
-				shapesCanvasY = screenRows - shapesPickerHeight
+			glyphsCanvasY := m.selectedCategory
+			if glyphsCanvasY+glyphsPickerHeight > screenRows {
+				glyphsCanvasY = screenRows - glyphsPickerHeight
 			}
-			if shapesCanvasY < 0 {
-				shapesCanvasY = 0
+			if glyphsCanvasY < 0 {
+				glyphsCanvasY = 0
 			}
-			shapesPickerTop := controlBarHeight + shapesCanvasY
+			glyphsPickerTop := controlBarHeight + glyphsCanvasY
 
-			if msg.Y >= shapesPickerTop && msg.Y < shapesPickerTop+shapesPickerHeight &&
-				msg.X >= shapesPickerLeft && msg.X < shapesPickerLeft+shapesPickerWidth {
-				shapeRow := msg.Y - shapesPickerTop - 1
-				if shapeRow >= 0 && shapeRow < len(characterGroups[m.selectedCategory].chars) {
-					m.selectedChar = characterGroups[m.selectedCategory].chars[shapeRow]
-					m.shapesFocusOnPanel = true
+			if msg.Y >= glyphsPickerTop && msg.Y < glyphsPickerTop+glyphsPickerHeight &&
+				msg.X >= glyphsPickerLeft && msg.X < glyphsPickerLeft+glyphsPickerWidth {
+				glyphRow := msg.Y - glyphsPickerTop - 1
+				if glyphRow >= 0 && glyphRow < len(characterGroups[m.selectedCategory].chars) {
+					m.selectedChar = characterGroups[m.selectedCategory].chars[glyphRow]
+					m.glyphsFocusOnPanel = true
 					return m, nil
 				}
 			}
@@ -528,13 +528,13 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 				m.showBgPicker = false
 				m.showToolPicker = false
 				return m, nil
-			} else if m.toolbarShapeX > 0 && msg.X >= m.toolbarShapeX && msg.X < m.toolbarForegroundX {
+			} else if m.toolbarGlyphX > 0 && msg.X >= m.toolbarGlyphX && msg.X < m.toolbarForegroundX {
 				m.showCharPicker = !m.showCharPicker
 				m.showFgPicker = false
 				m.showBgPicker = false
 				m.showToolPicker = false
 				if m.showCharPicker {
-					m.shapesFocusOnPanel = false
+					m.glyphsFocusOnPanel = false
 				}
 				return m, nil
 			}

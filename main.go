@@ -29,8 +29,8 @@ type model struct {
 	selectedTool           string
 	drawingTool            string
 	selectedCategory   int
-	showingShapes      bool
-	shapesFocusOnPanel bool
+	showingGlyphs      bool
+	glyphsFocusOnPanel bool
 	history            []Canvas
 	historyIndex       int
 	mouseDown          bool
@@ -61,12 +61,12 @@ type model struct {
 	fixedHeight        int
 	canvasInitialized  bool
 	// Toolbar button positions (calculated during render)
-	toolbarShapeX      int
+	toolbarGlyphX      int
 	toolbarForegroundX int
 	toolbarBackgroundX int
 	toolbarToolX       int
 	// Toolbar selected item positions (for popup alignment)
-	toolbarShapeItemX      int
+	toolbarGlyphItemX      int
 	toolbarForegroundItemX int
 	toolbarBackgroundItemX int
 	toolbarToolItemX       int
