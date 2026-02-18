@@ -23,9 +23,9 @@ const (
 )
 
 func (m *model) renderControlBar() string {
-	bgColor := lipgloss.Color("#0E7490")
-	baseColor := lipgloss.Color("#E0E0E0")
-	highlightColor := lipgloss.Color("#FFFFFF")
+	bgColor := themeColor(m.config.Theme.ToolbarBg)
+	baseColor := themeColor(m.config.Theme.ToolbarFg)
+	highlightColor := themeColor(m.config.Theme.ToolbarHighlightFg)
 
 	baseStyle := lipgloss.NewStyle().
 		Background(bgColor).
@@ -33,7 +33,7 @@ func (m *model) renderControlBar() string {
 		Padding(0, 1)
 
 	highlightStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#0891B2")).
+		Background(themeColor(m.config.Theme.ToolbarHighlightBg)).
 		Foreground(highlightColor).
 		Padding(0, 1)
 
@@ -44,17 +44,17 @@ func (m *model) renderControlBar() string {
 
 	currentX := 0
 
-	// Shape button
-	shapeText := fmt.Sprintf("%sS%shapes: %s", underlineOn, underlineOff, m.selectedChar)
-	var shapeButton string
+	// Glyph button
+	glyphText := fmt.Sprintf("%sG%slyphs: %s", underlineOn, underlineOff, m.selectedChar)
+	var glyphButton string
 	if m.showCharPicker {
-		shapeButton = highlightStyle.Render(shapeText)
+		glyphButton = highlightStyle.Render(glyphText)
 	} else {
-		shapeButton = baseStyle.Render(shapeText)
+		glyphButton = baseStyle.Render(glyphText)
 	}
-	m.toolbarShapeX = currentX + toolbarButtonPadding
-	m.toolbarShapeItemX = currentX + 9
-	currentX += lipgloss.Width(shapeButton)
+	m.toolbarGlyphX = currentX + toolbarButtonPadding
+	m.toolbarGlyphItemX = currentX + 9
+	currentX += lipgloss.Width(glyphButton)
 	currentX += 1 // separator
 
 	// Foreground color button
@@ -115,7 +115,7 @@ func (m *model) renderControlBar() string {
 		modeIndicator = baseStyle.Render(modeText)
 	}
 
-	barContent := shapeButton + sep + fgButton + sep + bgButton + sep + toolButton + sep + modeIndicator
+	barContent := glyphButton + sep + fgButton + sep + bgButton + sep + toolButton + sep + modeIndicator
 
 	fileIndicator := ""
 	if m.filePath != "" {

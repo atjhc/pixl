@@ -10,16 +10,16 @@ import (
 func (m *model) renderCategoryPicker() string {
 	pickerStyle := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("12"))
+		BorderForeground(themeColor(m.config.Theme.MenuBorder))
 
-	focusedBg := lipgloss.Color("#0891B2")
-	unfocusedBg := lipgloss.Color("#3A3A3A")
+	focusedBg := themeColor(m.config.Theme.MenuSelectedBg)
+	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := focusedBg
-	if m.shapesFocusOnPanel {
+	if m.glyphsFocusOnPanel {
 		selectedBg = unfocusedBg
 	}
-	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(lipgloss.Color("#FFFFFF"))
+	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
 
 	maxNameWidth := 0
 	for _, group := range characterGroups {
@@ -49,19 +49,19 @@ func (m *model) renderCategoryPicker() string {
 	return pickerStyle.Render(content.String())
 }
 
-func (m *model) renderShapesPicker() string {
+func (m *model) renderGlyphsPicker() string {
 	pickerStyle := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("12"))
+		BorderForeground(themeColor(m.config.Theme.MenuBorder))
 
-	focusedBg := lipgloss.Color("#0891B2")
-	unfocusedBg := lipgloss.Color("#3A3A3A")
+	focusedBg := themeColor(m.config.Theme.MenuSelectedBg)
+	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := unfocusedBg
-	if m.shapesFocusOnPanel {
+	if m.glyphsFocusOnPanel {
 		selectedBg = focusedBg
 	}
-	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(lipgloss.Color("#FFFFFF"))
+	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
 
 	var content strings.Builder
 	if m.selectedCategory >= 0 && m.selectedCategory < len(characterGroups) {
@@ -86,16 +86,16 @@ func (m *model) renderShapesPicker() string {
 func (m *model) renderDrawingToolPicker() string {
 	pickerStyle := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("12"))
+		BorderForeground(themeColor(m.config.Theme.MenuBorder))
 
-	focusedBg := lipgloss.Color("#0891B2")
-	unfocusedBg := lipgloss.Color("#3A3A3A")
+	focusedBg := themeColor(m.config.Theme.MenuSelectedBg)
+	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := unfocusedBg
 	if m.toolPickerFocusOnStyle {
 		selectedBg = focusedBg
 	}
-	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(lipgloss.Color("#FFFFFF"))
+	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
 
 	currentIdx := m.drawingToolOptionIndex()
 
@@ -129,16 +129,16 @@ func (m *model) renderToolSubmenuPicker() string {
 func (m *model) renderToolPicker() string {
 	pickerStyle := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("12"))
+		BorderForeground(themeColor(m.config.Theme.MenuBorder))
 
-	focusedBg := lipgloss.Color("#0891B2")
-	unfocusedBg := lipgloss.Color("#3A3A3A")
+	focusedBg := themeColor(m.config.Theme.MenuSelectedBg)
+	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := focusedBg
 	if m.toolPickerFocusOnStyle {
 		selectedBg = unfocusedBg
 	}
-	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(lipgloss.Color("#FFFFFF"))
+	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
 
 	items := m.toolPickerItems()
 
@@ -192,16 +192,16 @@ func (m *model) renderToolPicker() string {
 func (m *model) renderBoxStylePicker() string {
 	pickerStyle := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("12"))
+		BorderForeground(themeColor(m.config.Theme.MenuBorder))
 
-	focusedBg := lipgloss.Color("#0891B2")
-	unfocusedBg := lipgloss.Color("#3A3A3A")
+	focusedBg := themeColor(m.config.Theme.MenuSelectedBg)
+	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := unfocusedBg
 	if m.toolPickerFocusOnStyle {
 		selectedBg = focusedBg
 	}
-	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(lipgloss.Color("#FFFFFF"))
+	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
 
 	var content strings.Builder
 	for i, s := range boxStyles {
@@ -223,11 +223,11 @@ func (m *model) renderBoxStylePicker() string {
 func (m *model) renderColorPicker(title string) string {
 	pickerStyle := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("12"))
+		BorderForeground(themeColor(m.config.Theme.MenuBorder))
 
 	selectedStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#0891B2")).
-		Foreground(lipgloss.Color("#FFFFFF"))
+		Background(themeColor(m.config.Theme.MenuSelectedBg)).
+		Foreground(themeColor(m.config.Theme.MenuSelectedFg))
 
 	currentColor := m.foregroundColor
 	if title == "Background" {

@@ -103,6 +103,7 @@ func main() {
 
 	m := initialModel()
 	m.config = loadConfig()
+	m.applyConfig()
 
 	opts := []tea.ProgramOption{
 		tea.WithAltScreen(),

@@ -439,7 +439,7 @@ func (t SelectTool) RenderPreview(m *model, row, col int) (string, bool) {
 		return "", false
 	}
 
-	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	dimStyle := lipgloss.NewStyle().Foreground(themeColor(m.config.Theme.CursorFg))
 	var char string
 	switch {
 	case minY == maxY && minX == maxX:

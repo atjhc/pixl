@@ -37,9 +37,9 @@ func (m *model) View() string {
 		popup = m.renderCategoryPicker()
 		popupLines = strings.Split(popup, "\n")
 		popupStartY = 0
-		popupX = m.toolbarShapeItemX - pickerContentOffset
+		popupX = m.toolbarGlyphItemX - pickerContentOffset
 
-		popup2 = m.renderShapesPicker()
+		popup2 = m.renderGlyphsPicker()
 		popup2Lines = strings.Split(popup2, "\n")
 		popup2StartY = popupStartY + m.selectedCategory
 		if popup2StartY+len(popup2Lines) > screenRows {
@@ -92,8 +92,8 @@ func (m *model) View() string {
 
 	// Render screen rows
 	offY, offX := m.canvasOffset()
-	borderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
-	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
+	borderStyle := lipgloss.NewStyle().Foreground(themeColor(m.config.Theme.CanvasBorder))
+	labelStyle := lipgloss.NewStyle().Foreground(themeColor(m.config.Theme.CanvasBorder))
 	label := fmt.Sprintf("%dx%d", m.canvas.width, m.canvas.height)
 
 	labelRow := offY
@@ -226,7 +226,7 @@ func (m *model) renderCellAt(row, col int) string {
 		hasHeight := minY != maxY
 		if hasWidth && hasHeight && row >= minY && row <= maxY && col >= minX && col <= maxX {
 			if row == minY || row == maxY || col == minX || col == maxX {
-				highlightStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
+				highlightStyle := lipgloss.NewStyle().Foreground(themeColor(m.config.Theme.SelectionFg))
 				var char string
 				if row == minY && col == minX {
 					char = "┌"
@@ -249,7 +249,7 @@ func (m *model) renderCellAt(row, col int) string {
 	if !m.mouseDown &&
 		row == m.hoverRow && col == m.hoverCol &&
 		row >= 0 && row < m.canvas.height && col >= 0 && col < m.canvas.width {
-		ghostStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+		ghostStyle := lipgloss.NewStyle().Foreground(themeColor(m.config.Theme.CursorFg))
 		cursorChar := m.selectedChar
 		if c := m.tool().CursorChar(m); c != "" {
 			cursorChar = c

@@ -65,6 +65,38 @@ Extended color support in three groups:
 - `Esc` - Close open pickers / Clear selection
 - `q` or `Ctrl+C` - Quit
 
+### Configuration
+
+pixl reads settings from `~/.config/pixl/config`. Lines starting with `#` are comments.
+
+```
+# Defaults
+merge-box-borders = true
+default-glyph = ●
+default-foreground = white
+default-tool = Point
+
+# Theme (defaults shown)
+toolbar-bg = cyan
+toolbar-fg = bright-white
+toolbar-highlight-bg = bright-cyan
+toolbar-highlight-fg = bright-white
+menu-border = bright-blue
+menu-selected-bg = bright-cyan
+menu-selected-fg = bright-white
+menu-unfocused-bg = bright-black
+canvas-border = white
+selection-fg = bright-blue
+cursor-fg = bright-black
+```
+
+Theme colors accept any of the 16 standard terminal color names:
+`black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`,
+`bright-black`, `bright-red`, `bright-green`, `bright-yellow`, `bright-blue`,
+`bright-magenta`, `bright-cyan`, `bright-white`.
+ANSI numbers (e.g. `42`) and hex values (e.g. `#0E7490`) also work but may
+not display correctly on all terminals.
+
 ### Mouse Support
 - Click and drag to draw with Point tool
 - Click and drag to create shapes with Rectangle/Ellipse tools
