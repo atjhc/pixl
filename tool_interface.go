@@ -39,7 +39,7 @@ func (m *model) tool() Tool {
 type PointTool struct{}
 
 func (t PointTool) Name() string                { return "Point" }
-func (t PointTool) DisplayName(_ *model) string { return "Points" }
+func (t PointTool) DisplayName(m *model) string { return "Points" }
 func (t PointTool) CursorChar(_ *model) string    { return "" }
 func (t PointTool) ModifiesCanvas() bool         { return true }
 
@@ -181,7 +181,7 @@ func (s *boxStyle) fromDirs(up, down, left, right bool) string {
 func (t BoxTool) Name() string { return "Box" }
 func (t BoxTool) DisplayName(m *model) string {
 	s := boxStyles[m.boxStyle]
-	return s.tl + s.h + s.tr + " Box"
+	return s.tl + s.tr + " Box"
 }
 func (t BoxTool) CursorChar(m *model) string  { return boxStyles[m.boxStyle].tl }
 func (t BoxTool) ModifiesCanvas() bool        { return true }
@@ -263,7 +263,7 @@ type ellipseMode struct {
 
 var ellipseModes = []ellipseMode{
 	{"Ellipse", false},
-	{"Oval", true},
+	{"Circle", true},
 }
 
 type drawingToolOption struct {
@@ -276,7 +276,7 @@ var drawingToolOptions = []drawingToolOption{
 	{"Points", "Point", false},
 	{"Rectangle", "Rectangle", false},
 	{"Ellipse", "Ellipse", false},
-	{"Oval", "Ellipse", true},
+	{"Circle", "Ellipse", true},
 	{"Line", "Line", false},
 }
 

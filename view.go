@@ -32,29 +32,16 @@ func (m *model) View() string {
 	var popup2Lines []string
 	var popup2StartY int
 	var popup2X int
+	var popup3 string
+	var popup3Lines []string
+	var popup3StartY int
+	var popup3X int
+	var popup4 string
+	var popup4Lines []string
+	var popup4StartY int
+	var popup4X int
 
-	if m.showCharPicker {
-		popup = m.renderCategoryPicker()
-		popupLines = strings.Split(popup, "\n")
-		popupStartY = 0
-		popupX = m.toolbarGlyphItemX - pickerContentOffset
-
-		popup2 = m.renderGlyphsPicker()
-		popup2Lines = strings.Split(popup2, "\n")
-		popup2StartY = popupStartY + m.selectedCategory
-		if popup2StartY+len(popup2Lines) > screenRows {
-			popup2StartY = screenRows - len(popup2Lines)
-		}
-		if popup2StartY < 0 {
-			popup2StartY = 0
-		}
-		categoryWidth := 0
-		if len(popupLines) > 0 {
-			categoryWidth = lipgloss.Width(popupLines[0])
-		}
-		popupLines, popup2Lines = mergePopupBorders(popupLines, popup2Lines, popup2StartY-popupStartY)
-		popup2X = popupX + categoryWidth - 1
-	} else if m.showFgPicker {
+	if m.showFgPicker {
 		popup = m.renderColorPicker("Foreground")
 		popupLines = strings.Split(popup, "\n")
 		popupStartY = 0
@@ -87,6 +74,41 @@ func (m *model) View() string {
 			}
 			popupLines, popup2Lines = mergePopupBorders(popupLines, popup2Lines, popup2StartY-popupStartY)
 			popup2X = popupX + toolPickerWidth - 1
+
+			if m.toolHasGlyphPicker() {
+				popup3 = m.renderCategoryPicker()
+				popup3Lines = strings.Split(popup3, "\n")
+				// Align with the Glyphs row (index 0 in submenu)
+				popup3StartY = popup2StartY
+				if popup3StartY+len(popup3Lines) > screenRows {
+					popup3StartY = screenRows - len(popup3Lines)
+				}
+				if popup3StartY < 0 {
+					popup3StartY = 0
+				}
+				popup2Width := 0
+				if len(popup2Lines) > 0 {
+					popup2Width = lipgloss.Width(popup2Lines[0])
+				}
+				popup2Lines, popup3Lines = mergePopupBorders(popup2Lines, popup3Lines, popup3StartY-popup2StartY)
+				popup3X = popup2X + popup2Width - 1
+
+				popup4 = m.renderGlyphsPicker()
+				popup4Lines = strings.Split(popup4, "\n")
+				popup4StartY = popup3StartY + m.selectedCategory
+				if popup4StartY+len(popup4Lines) > screenRows {
+					popup4StartY = screenRows - len(popup4Lines)
+				}
+				if popup4StartY < 0 {
+					popup4StartY = 0
+				}
+				popup3Width := 0
+				if len(popup3Lines) > 0 {
+					popup3Width = lipgloss.Width(popup3Lines[0])
+				}
+				popup3Lines, popup4Lines = mergePopupBorders(popup3Lines, popup4Lines, popup4StartY-popup3StartY)
+				popup4X = popup3X + popup3Width - 1
+			}
 		}
 	}
 
@@ -129,6 +151,32 @@ func (m *model) View() string {
 				if col >= popup2X && col < popup2X+popup2Width {
 					if col == popup2X {
 						lineBuilder.WriteString("\x1b[0m" + popup2Line)
+					}
+					inPopup = true
+				}
+			}
+
+			if !inPopup && popup3Lines != nil && i >= popup3StartY && i < popup3StartY+len(popup3Lines) {
+				popup3LineIdx := i - popup3StartY
+				popup3Line := popup3Lines[popup3LineIdx]
+				popup3Width := lipgloss.Width(popup3Line)
+
+				if col >= popup3X && col < popup3X+popup3Width {
+					if col == popup3X {
+						lineBuilder.WriteString("\x1b[0m" + popup3Line)
+					}
+					inPopup = true
+				}
+			}
+
+			if !inPopup && popup4Lines != nil && i >= popup4StartY && i < popup4StartY+len(popup4Lines) {
+				popup4LineIdx := i - popup4StartY
+				popup4Line := popup4Lines[popup4LineIdx]
+				popup4Width := lipgloss.Width(popup4Line)
+
+				if col >= popup4X && col < popup4X+popup4Width {
+					if col == popup4X {
+						lineBuilder.WriteString("\x1b[0m" + popup4Line)
 					}
 					inPopup = true
 				}

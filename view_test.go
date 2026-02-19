@@ -154,7 +154,7 @@ func TestCursorShownWithMenuOpen(t *testing.T) {
 		selectedTool:   "Point",
 		hoverRow:       3,
 		hoverCol:       5,
-		showCharPicker: true,
+		showToolPicker: true,
 	}
 
 	got := m.renderCellAt(3, 5)

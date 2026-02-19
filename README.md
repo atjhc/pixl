@@ -9,7 +9,7 @@ Built with Go and Bubble Tea.
 ### Drawing Tools
 - **Point Tool**: Freehand drawing by clicking and dragging
 - **Rectangle Tool**: Draw rectangle outlines with live preview
-- **Ellipse Tool**: Draw ellipses/ovals with live preview
+- **Ellipse Tool**: Draw ellipses/circles with live preview
   - Press **Return** to toggle between Ellipse and Circle modes
   - Circle mode draws perfect circles (compensated for terminal aspect ratio)
   - Hold **Option/Alt** + any key for temporary circle mode
@@ -47,10 +47,9 @@ Extended color support in three groups:
 ### Keyboard Shortcuts
 
 **Pickers:**
-- `s` - Toggle Shapes palette
 - `f` - Toggle Foreground color picker
 - `b` - Toggle Background color picker
-- `t` - Toggle Tool picker
+- `t` - Toggle Tool picker (glyphs are accessed via the Tool picker)
 
 **Editing:**
 - `u` - Undo

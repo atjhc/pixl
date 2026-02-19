@@ -177,7 +177,7 @@ func TestToolDisplayName(t *testing.T) {
 	m := newTestModel(10, 10)
 	m.selectedTool = "Point"
 	if got := m.tool().DisplayName(m); got != "Points" {
-		t.Errorf("Point DisplayName = %q, want Points", got)
+		t.Errorf("Point DisplayName = %q, want %q", got, "Points")
 	}
 
 	m.selectedTool = "Ellipse"
@@ -187,8 +187,8 @@ func TestToolDisplayName(t *testing.T) {
 	}
 
 	m.circleMode = true
-	if got := m.tool().DisplayName(m); got != "Oval" {
-		t.Errorf("DisplayName with circleMode=true = %q, want Oval", got)
+	if got := m.tool().DisplayName(m); got != "Circle" {
+		t.Errorf("DisplayName with circleMode=true = %q, want Circle", got)
 	}
 }
 
@@ -259,13 +259,13 @@ func TestBoxToolDisplayName(t *testing.T) {
 	m.selectedTool = "Box"
 
 	m.boxStyle = 0
-	if got := m.tool().DisplayName(m); got != "┌─┐ Box" {
-		t.Errorf("DisplayName style 0 = %q, want %q", got, "┌─┐ Box")
+	if got := m.tool().DisplayName(m); got != "┌┐ Box" {
+		t.Errorf("DisplayName style 0 = %q, want %q", got, "┌┐ Box")
 	}
 
 	m.boxStyle = 1
-	if got := m.tool().DisplayName(m); got != "╔═╗ Box" {
-		t.Errorf("DisplayName style 1 = %q, want %q", got, "╔═╗ Box")
+	if got := m.tool().DisplayName(m); got != "╔╗ Box" {
+		t.Errorf("DisplayName style 1 = %q, want %q", got, "╔╗ Box")
 	}
 }
 
@@ -324,16 +324,16 @@ func TestToolPickerItems(t *testing.T) {
 		t.Fatalf("toolPickerItems count = %d, want 4", len(items))
 	}
 
-	// First item should show current drawing tool name
-	if items[0].name != "Points" {
-		t.Errorf("item 0 name = %q, want Points", items[0].name)
+	// First item should always show "Draw"
+	if items[0].name != "Draw" {
+		t.Errorf("item 0 name = %q, want %q", items[0].name, "Draw")
 	}
 	if !items[0].selected {
 		t.Error("item 0 should be selected when tool is Point")
 	}
 
-	if items[1].icon != "┌─┐" {
-		t.Errorf("item 1 icon = %q, want ┌─┐", items[1].icon)
+	if items[1].icon != "┌┐" {
+		t.Errorf("item 1 icon = %q, want ┌┐", items[1].icon)
 	}
 	if items[1].name != "Box" {
 		t.Errorf("item 1 name = %q, want Box", items[1].name)
@@ -352,8 +352,8 @@ func TestToolPickerItemsEllipseSelected(t *testing.T) {
 	m.circleMode = true
 
 	items := m.toolPickerItems()
-	if items[0].name != "Oval" {
-		t.Errorf("drawing group name = %q, want Oval", items[0].name)
+	if items[0].name != "Draw" {
+		t.Errorf("drawing group name = %q, want Draw", items[0].name)
 	}
 	if !items[0].selected {
 		t.Error("drawing group should be selected when Ellipse is active")
@@ -468,8 +468,8 @@ func TestDrawingToolsSubmenuNavigation(t *testing.T) {
 
 	// Right arrow on drawing group should open submenu
 	m.handleKey(tea.KeyMsg{Type: tea.KeyRight})
-	if !m.toolPickerFocusOnStyle {
-		t.Error("right arrow on drawing group should set toolPickerFocusOnStyle")
+	if m.toolPickerFocusLevel == 0 {
+		t.Error("right arrow on drawing group should set toolPickerFocusLevel")
 	}
 
 	// Down should go to Rectangle
@@ -504,7 +504,7 @@ func TestDrawingToolsSubmenuNavigation(t *testing.T) {
 
 	// Left exits submenu
 	m.handleKey(tea.KeyMsg{Type: tea.KeyLeft})
-	if m.toolPickerFocusOnStyle {
+	if m.toolPickerFocusLevel != 0 {
 		t.Error("left should exit drawing submenu")
 	}
 	if !m.showToolPicker {
@@ -524,7 +524,7 @@ func TestDrawingToolsSubmenuEnterCloses(t *testing.T) {
 		height:                31,
 		ready:                 true,
 		showToolPicker:        true,
-		toolPickerFocusOnStyle: true,
+		toolPickerFocusLevel: 1,
 	}
 
 	m.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
@@ -548,25 +548,31 @@ func TestDrawingToolsSubmenuNumberKeys(t *testing.T) {
 		height:                31,
 		ready:                 true,
 		showToolPicker:        true,
-		toolPickerFocusOnStyle: true,
+		toolPickerFocusLevel: 1,
 	}
 
-	// Press 3 to select Ellipse
-	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'3'}})
-	if m.selectedTool != "Ellipse" || m.circleMode {
-		t.Errorf("key 3: expected Ellipse, got %q circleMode=%v", m.selectedTool, m.circleMode)
-	}
-
-	// Press 4 to select Oval
-	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'4'}})
-	if m.selectedTool != "Ellipse" || !m.circleMode {
-		t.Errorf("key 4: expected Oval, got %q circleMode=%v", m.selectedTool, m.circleMode)
-	}
-
-	// Press 1 to select Points
+	// Press 1 to select Glyph selector (stays on same tool)
 	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
+	if !m.onGlyphSelector {
+		t.Error("key 1: expected onGlyphSelector=true")
+	}
+
+	// Press 4 to select Ellipse (index 3 = drawingToolOptions[2])
+	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'4'}})
+	if m.selectedTool != "Ellipse" || m.circleMode {
+		t.Errorf("key 4: expected Ellipse, got %q circleMode=%v", m.selectedTool, m.circleMode)
+	}
+
+	// Press 5 to select Circle (index 4 = drawingToolOptions[3])
+	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'5'}})
+	if m.selectedTool != "Ellipse" || !m.circleMode {
+		t.Errorf("key 5: expected Circle, got %q circleMode=%v", m.selectedTool, m.circleMode)
+	}
+
+	// Press 2 to select Points (index 1 = drawingToolOptions[0])
+	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}})
 	if m.selectedTool != "Point" {
-		t.Errorf("key 1: expected Point, got %q", m.selectedTool)
+		t.Errorf("key 2: expected Point, got %q", m.selectedTool)
 	}
 }
 
@@ -620,7 +626,7 @@ func TestRightArrowOnFillSwitchesMenu(t *testing.T) {
 	}
 
 	m.handleKey(tea.KeyMsg{Type: tea.KeyRight})
-	if m.toolPickerFocusOnStyle {
+	if m.toolPickerFocusLevel != 0 {
 		t.Error("right on Fill should not open submenu")
 	}
 	if m.showToolPicker {
@@ -647,8 +653,8 @@ func TestBoxStyleSubmenuKeyboardNavigation(t *testing.T) {
 
 	// Right arrow when Box is selected should focus on style submenu
 	m.handleKey(tea.KeyMsg{Type: tea.KeyRight})
-	if !m.toolPickerFocusOnStyle {
-		t.Error("right arrow on Box tool should set toolPickerFocusOnStyle")
+	if m.toolPickerFocusLevel == 0 {
+		t.Error("right arrow on Box tool should set toolPickerFocusLevel")
 	}
 	if !m.showToolPicker {
 		t.Error("tool picker should remain open")
@@ -668,8 +674,8 @@ func TestBoxStyleSubmenuKeyboardNavigation(t *testing.T) {
 
 	// Left arrow should exit style submenu
 	m.handleKey(tea.KeyMsg{Type: tea.KeyLeft})
-	if m.toolPickerFocusOnStyle {
-		t.Error("left arrow should clear toolPickerFocusOnStyle")
+	if m.toolPickerFocusLevel != 0 {
+		t.Error("left arrow should clear toolPickerFocusLevel")
 	}
 	if !m.showToolPicker {
 		t.Error("tool picker should remain open after left")
@@ -688,7 +694,7 @@ func TestBoxStyleSubmenuEnterCloses(t *testing.T) {
 		height:                31,
 		ready:                 true,
 		showToolPicker:        true,
-		toolPickerFocusOnStyle: true,
+		toolPickerFocusLevel: 1,
 		boxStyle:              2,
 	}
 
@@ -713,12 +719,12 @@ func TestBoxStyleSubmenuEscGoesBack(t *testing.T) {
 		height:                31,
 		ready:                 true,
 		showToolPicker:        true,
-		toolPickerFocusOnStyle: true,
+		toolPickerFocusLevel: 1,
 	}
 
 	m.handleKey(tea.KeyMsg{Type: tea.KeyEscape})
-	if m.toolPickerFocusOnStyle {
-		t.Error("esc should clear toolPickerFocusOnStyle")
+	if m.toolPickerFocusLevel != 0 {
+		t.Error("esc should clear toolPickerFocusLevel")
 	}
 	if !m.showToolPicker {
 		t.Error("tool picker should remain open after esc from style submenu")
@@ -737,7 +743,7 @@ func TestBoxStyleSubmenuNumberKeys(t *testing.T) {
 		height:                31,
 		ready:                 true,
 		showToolPicker:        true,
-		toolPickerFocusOnStyle: true,
+		toolPickerFocusLevel: 1,
 		boxStyle:              0,
 	}
 
@@ -759,7 +765,7 @@ func TestBoxStyleSubmenuUpDownBounds(t *testing.T) {
 		height:                31,
 		ready:                 true,
 		showToolPicker:        true,
-		toolPickerFocusOnStyle: true,
+		toolPickerFocusLevel: 1,
 		boxStyle:              0,
 	}
 
@@ -785,12 +791,12 @@ func TestCloseMenusResetsStyleFocus(t *testing.T) {
 		backgroundColor:       "transparent",
 		selectedTool:          "Box",
 		showToolPicker:        true,
-		toolPickerFocusOnStyle: true,
+		toolPickerFocusLevel: 1,
 	}
 
 	m.closeMenus()
-	if m.toolPickerFocusOnStyle {
-		t.Error("closeMenus should reset toolPickerFocusOnStyle")
+	if m.toolPickerFocusLevel != 0 {
+		t.Error("closeMenus should reset toolPickerFocusLevel")
 	}
 }
 
@@ -801,12 +807,12 @@ func TestOpenMenuResetsStyleFocus(t *testing.T) {
 		foregroundColor:       "white",
 		backgroundColor:       "transparent",
 		selectedTool:          "Box",
-		toolPickerFocusOnStyle: true,
+		toolPickerFocusLevel: 1,
 	}
 
-	m.openMenu(3)
-	if m.toolPickerFocusOnStyle {
-		t.Error("openMenu should reset toolPickerFocusOnStyle")
+	m.openMenu(2)
+	if m.toolPickerFocusLevel != 0 {
+		t.Error("openMenu should reset toolPickerFocusLevel")
 	}
 }
 
@@ -818,7 +824,7 @@ func TestDrawingToolOptions(t *testing.T) {
 		{"Points", "Point"},
 		{"Rectangle", "Rectangle"},
 		{"Ellipse", "Ellipse"},
-		{"Oval", "Ellipse"},
+		{"Circle", "Ellipse"},
 		{"Line", "Line"},
 	}
 

@@ -55,6 +55,10 @@ The view renders **column-by-column** within each row. Popups (pickers) overlay 
 
 Tools follow a mouse lifecycle: `OnPress` → `OnDrag` (repeated) → `OnRelease`. Shape tools store preview points on `model` during drag; `RenderPreview` draws them without modifying the canvas. The canvas is only modified on release (or continuously for Point tool). History snapshots are saved per-brushstroke, not per-cell.
 
+### Menu System
+
+Three toolbar menus (Foreground, Background, Tool) opened via `f`/`b`/`t` keys. The Tool picker uses a multi-level focus model (`toolPickerFocusLevel` 0–3): level 0 = main tool list (Draw, Box, Fill, Select), level 1 = submenu (Glyph selector + drawing tools, or box styles), level 2 = glyph categories, level 3 = individual glyphs. The Glyph selector entry (index 0 in the Draw submenu, tracked by `onGlyphSelector`) opens the category/glyph picker panels. Navigation: right arrow deepens focus, left arrow retreats, esc goes back one level. Up to 4 popup panels render side-by-side with merged borders.
+
 ## Conventions
 
 - Prefer guard clauses over nested conditionals.

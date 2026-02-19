@@ -14,68 +14,111 @@ func testGlyphsPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, 
 	for catIdx, group := range characterGroups {
 		t.Run(fmt.Sprintf("category_%d_%s", catIdx, group.name), func(t *testing.T) {
 			m := &model{
-				canvas:           NewCanvas(canvasW, canvasH),
-				selectedChar:     "●",
-				foregroundColor:  "white",
-				backgroundColor:  "transparent",
-				selectedTool:     "Point",
-				drawingTool:      "Point",
-				width:            termW,
-				height:           termH,
-				ready:            true,
-				showCharPicker:   true,
+				canvas:          NewCanvas(canvasW, canvasH),
+				selectedChar:    "●",
+				foregroundColor: "white",
+				backgroundColor: "transparent",
+				selectedTool:    "Point",
+				drawingTool:     "Point",
+				width:           termW,
+				height:          termH,
+				ready:           true,
+				showToolPicker:  true,
 				selectedCategory: catIdx,
-				fixedWidth:       fixedW,
-				fixedHeight:      fixedH,
+				onGlyphSelector: true,
+				fixedWidth:      fixedW,
+				fixedHeight:     fixedH,
 			}
 
-			// Calculate where the view renders the glyphs panel
-			popup := m.renderCategoryPicker()
-			popupLines := strings.Split(popup, "\n")
-			popupX := m.toolbarGlyphItemX - pickerContentOffset
+			// Render the toolbar to set X positions
+			m.renderControlBar()
 
-			popup2 := m.renderGlyphsPicker()
+			// Calculate popup positions matching view.go logic
+			popup := m.renderToolPicker()
+			popupLines := strings.Split(popup, "\n")
+			popupX := m.toolbarToolItemX - pickerContentOffset
+
+			popup2 := m.renderToolSubmenuPicker()
 			popup2Lines := strings.Split(popup2, "\n")
+			pickerIdx := m.toolPickerIndex()
 
 			screenRows := m.height - controlBarHeight
 			if !m.hasFixedSize() {
 				screenRows = m.canvas.height
 			}
 
-			popup2StartY := catIdx
+			popup2StartY := pickerIdx
 			if popup2StartY+len(popup2Lines) > screenRows {
 				popup2StartY = screenRows - len(popup2Lines)
 			}
 			if popup2StartY < 0 {
 				popup2StartY = 0
 			}
-
-			categoryWidth := 0
+			toolPickerWidth := 0
 			if len(popupLines) > 0 {
-				categoryWidth = lipgloss.Width(popupLines[0])
+				toolPickerWidth = lipgloss.Width(popupLines[0])
 			}
-			popup2X := popupX + categoryWidth - 1
+			popup2X := popupX + toolPickerWidth - 1
 
-			clickX := popup2X + 2
+			popup2Width := 0
+			if len(popup2Lines) > 0 {
+				popup2Width = lipgloss.Width(popup2Lines[0])
+			}
+
+			// popup3: category picker
+			popup3 := m.renderCategoryPicker()
+			popup3Lines := strings.Split(popup3, "\n")
+
+			popup3StartY := popup2StartY
+			if popup3StartY+len(popup3Lines) > screenRows {
+				popup3StartY = screenRows - len(popup3Lines)
+			}
+			if popup3StartY < 0 {
+				popup3StartY = 0
+			}
+			popup3X := popup2X + popup2Width - 1
+
+			popup3Width := 0
+			if len(popup3Lines) > 0 {
+				popup3Width = lipgloss.Width(popup3Lines[0])
+			}
+
+			// popup4: glyphs picker
+			popup4 := m.renderGlyphsPicker()
+			popup4Lines := strings.Split(popup4, "\n")
+
+			popup4StartY := popup3StartY + catIdx
+			if popup4StartY+len(popup4Lines) > screenRows {
+				popup4StartY = screenRows - len(popup4Lines)
+			}
+			if popup4StartY < 0 {
+				popup4StartY = 0
+			}
+			popup4X := popup3X + popup3Width - 1
+
+			clickX := popup4X + 2
 
 			for glyphIdx, expectedChar := range group.chars {
-				clickY := controlBarHeight + popup2StartY + 1 + glyphIdx
+				clickY := controlBarHeight + popup4StartY + 1 + glyphIdx
 
 				m2 := &model{
-					canvas:           NewCanvas(canvasW, canvasH),
-					selectedChar:     "●",
-					foregroundColor:  "white",
-					backgroundColor:  "transparent",
-					selectedTool:     "Point",
-					drawingTool:      "Point",
-					width:            termW,
-					height:           termH,
-					ready:            true,
-					showCharPicker:   true,
+					canvas:          NewCanvas(canvasW, canvasH),
+					selectedChar:    "●",
+					foregroundColor: "white",
+					backgroundColor: "transparent",
+					selectedTool:    "Point",
+					drawingTool:     "Point",
+					width:           termW,
+					height:          termH,
+					ready:           true,
+					showToolPicker:  true,
 					selectedCategory: catIdx,
-					fixedWidth:       fixedW,
-					fixedHeight:      fixedH,
+					onGlyphSelector: true,
+					fixedWidth:      fixedW,
+					fixedHeight:     fixedH,
 				}
+				// Set toolbar positions
+				m2.renderControlBar()
 
 				msg := tea.MouseMsg{
 					X:    clickX,
@@ -86,8 +129,8 @@ func testGlyphsPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, 
 				m2.handleMouse(msg)
 
 				if m2.selectedChar != expectedChar {
-					t.Errorf("glyph[%d] at screen (%d,%d): got %q, want %q (popup2StartY=%d)",
-						glyphIdx, clickX, clickY, m2.selectedChar, expectedChar, popup2StartY)
+					t.Errorf("glyph[%d] at screen (%d,%d): got %q, want %q (popup4StartY=%d)",
+						glyphIdx, clickX, clickY, m2.selectedChar, expectedChar, popup4StartY)
 				}
 			}
 		})
@@ -107,6 +150,7 @@ func TestDrawingToolPickerClickTargets(t *testing.T) {
 		ready:           true,
 		showToolPicker:  true,
 	}
+	m.renderControlBar()
 
 	toolPopup := m.renderToolPicker()
 	toolPopupLines := strings.Split(toolPopup, "\n")
@@ -137,7 +181,7 @@ func TestDrawingToolPickerClickTargets(t *testing.T) {
 
 	for optIdx, opt := range drawingToolOptions {
 		clickX := submenuLeft + 2
-		clickY := submenuTop + 1 + optIdx
+		clickY := submenuTop + 1 + 1 + optIdx // +1 for Glyph selector entry at index 0
 
 		m2 := &model{
 			canvas:          NewCanvas(80, 30),
@@ -151,6 +195,7 @@ func TestDrawingToolPickerClickTargets(t *testing.T) {
 			ready:           true,
 			showToolPicker:  true,
 		}
+		m2.renderControlBar()
 
 		msg := tea.MouseMsg{
 			X:    clickX,
@@ -184,6 +229,7 @@ func TestBoxStylePickerClickTargets(t *testing.T) {
 		showToolPicker:  true,
 		boxStyle:        0,
 	}
+	m.renderControlBar()
 
 	toolPopup := m.renderToolPicker()
 	toolPopupLines := strings.Split(toolPopup, "\n")
@@ -229,6 +275,7 @@ func TestBoxStylePickerClickTargets(t *testing.T) {
 			showToolPicker:  true,
 			boxStyle:        0,
 		}
+		m2.renderControlBar()
 
 		msg := tea.MouseMsg{
 			X:    clickX,

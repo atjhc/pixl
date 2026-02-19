@@ -16,7 +16,7 @@ func (m *model) renderCategoryPicker() string {
 	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := focusedBg
-	if m.glyphsFocusOnPanel {
+	if m.toolPickerFocusLevel != 2 {
 		selectedBg = unfocusedBg
 	}
 	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
@@ -58,7 +58,7 @@ func (m *model) renderGlyphsPicker() string {
 	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := unfocusedBg
-	if m.glyphsFocusOnPanel {
+	if m.toolPickerFocusLevel == 3 {
 		selectedBg = focusedBg
 	}
 	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
@@ -92,23 +92,61 @@ func (m *model) renderDrawingToolPicker() string {
 	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := unfocusedBg
-	if m.toolPickerFocusOnStyle {
+	if m.toolPickerFocusLevel == 1 {
 		selectedBg = focusedBg
 	}
 	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
 
-	currentIdx := m.drawingToolOptionIndex()
+	highlightIdx := m.toolSubmenuIndex()
+
+	iconCol := lipgloss.Width(m.selectedChar)
+
+	glyphLabel := "Glyph"
+	maxNameWidth := lipgloss.Width(glyphLabel)
+	for _, opt := range drawingToolOptions {
+		if w := lipgloss.Width(opt.name); w > maxNameWidth {
+			maxNameWidth = w
+		}
+	}
+
+	totalEntries := len(drawingToolOptions) + 1
+	lineWidth := 1 + iconCol + 1 + maxNameWidth + 1
 
 	var content strings.Builder
-	for i, opt := range drawingToolOptions {
-		line := " " + opt.name + " "
 
-		if i == currentIdx {
+	// Entry 0: Glyph selector
+	icon := m.selectedChar
+	for lipgloss.Width(icon) < iconCol {
+		icon += " "
+	}
+	line := " " + icon + " " + glyphLabel
+	for lipgloss.Width(line) < lineWidth {
+		line += " "
+	}
+	if highlightIdx == 0 {
+		content.WriteString(selectedStyle.Render(line))
+	} else {
+		content.WriteString(line)
+	}
+	content.WriteString("\n")
+
+	// Entries 1+: drawing tool options
+	for i, opt := range drawingToolOptions {
+		padIcon := ""
+		for lipgloss.Width(padIcon) < iconCol {
+			padIcon += " "
+		}
+		line := " " + padIcon + " " + opt.name
+		for lipgloss.Width(line) < lineWidth {
+			line += " "
+		}
+
+		if i+1 == highlightIdx {
 			content.WriteString(selectedStyle.Render(line))
 		} else {
 			content.WriteString(line)
 		}
-		if i < len(drawingToolOptions)-1 {
+		if i < totalEntries-2 {
 			content.WriteString("\n")
 		}
 	}
@@ -135,7 +173,7 @@ func (m *model) renderToolPicker() string {
 	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := focusedBg
-	if m.toolPickerFocusOnStyle {
+	if m.toolPickerFocusLevel >= 1 {
 		selectedBg = unfocusedBg
 	}
 	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
@@ -162,7 +200,7 @@ func (m *model) renderToolPicker() string {
 		if iconCol > 0 {
 			icon := item.icon
 			for lipgloss.Width(icon) < iconCol {
-				icon += " "
+				icon = " " + icon
 			}
 			line = " " + icon + " " + item.name
 		} else {
@@ -198,14 +236,14 @@ func (m *model) renderBoxStylePicker() string {
 	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := unfocusedBg
-	if m.toolPickerFocusOnStyle {
+	if m.toolPickerFocusLevel == 1 {
 		selectedBg = focusedBg
 	}
 	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
 
 	var content strings.Builder
 	for i, s := range boxStyles {
-		line := fmt.Sprintf(" %s%s%s %s ", s.tl, s.h, s.tr, s.name)
+		line := fmt.Sprintf(" %s%s %s ", s.tl, s.tr, s.name)
 
 		if i == m.boxStyle {
 			content.WriteString(selectedStyle.Render(line))

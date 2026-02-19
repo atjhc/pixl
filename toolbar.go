@@ -44,19 +44,6 @@ func (m *model) renderControlBar() string {
 
 	currentX := 0
 
-	// Glyph button
-	glyphText := fmt.Sprintf("%sG%slyphs: %s", underlineOn, underlineOff, m.selectedChar)
-	var glyphButton string
-	if m.showCharPicker {
-		glyphButton = highlightStyle.Render(glyphText)
-	} else {
-		glyphButton = baseStyle.Render(glyphText)
-	}
-	m.toolbarGlyphX = currentX + toolbarButtonPadding
-	m.toolbarGlyphItemX = currentX + 9
-	currentX += lipgloss.Width(glyphButton)
-	currentX += 1 // separator
-
 	// Foreground color button
 	var fgSwatch string
 	if m.foregroundColor == "transparent" {
@@ -67,9 +54,9 @@ func (m *model) renderControlBar() string {
 	fgText := fmt.Sprintf("%sF%soreground: %s", underlineOn, underlineOff, fgSwatch)
 	var fgButton string
 	if m.showFgPicker {
-		fgButton = highlightStyle.Copy().Padding(0, 0, 0, 1).Render(fgText)
+		fgButton = highlightStyle.Render(fgText)
 	} else {
-		fgButton = baseStyle.Copy().Padding(0, 0, 0, 1).Render(fgText)
+		fgButton = baseStyle.Render(fgText)
 	}
 	m.toolbarForegroundX = currentX + toolbarButtonPadding
 	m.toolbarForegroundItemX = currentX + 13
@@ -86,9 +73,9 @@ func (m *model) renderControlBar() string {
 	bgText := fmt.Sprintf("%sB%sackground: %s", underlineOn, underlineOff, bgSwatch)
 	var bgButton string
 	if m.showBgPicker {
-		bgButton = highlightStyle.Copy().Padding(0, 0, 0, 1).Render(bgText)
+		bgButton = highlightStyle.Render(bgText)
 	} else {
-		bgButton = baseStyle.Copy().Padding(0, 0, 0, 1).Render(bgText)
+		bgButton = baseStyle.Render(bgText)
 	}
 	m.toolbarBackgroundX = currentX + toolbarButtonPadding
 	m.toolbarBackgroundItemX = currentX + 13
@@ -115,7 +102,7 @@ func (m *model) renderControlBar() string {
 		modeIndicator = baseStyle.Render(modeText)
 	}
 
-	barContent := glyphButton + sep + fgButton + sep + bgButton + sep + toolButton + sep + modeIndicator
+	barContent := fgButton + sep + bgButton + sep + toolButton + sep + modeIndicator
 
 	fileIndicator := ""
 	if m.filePath != "" {
