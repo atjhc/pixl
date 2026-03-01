@@ -111,7 +111,7 @@ git clone <repo-url>
 cd pixl
 
 # Build
-go build -o pixl
+go build -o pixl ./cmd/pixl
 
 # Run
 ./pixl
@@ -119,7 +119,7 @@ go build -o pixl
 
 Or run directly without building:
 ```bash
-go run main.go
+go run ./cmd/pixl
 ```
 
 ## Architecture
@@ -132,14 +132,15 @@ Built using the Elm Architecture via Bubble Tea:
 
 ### Key Files
 
-- `main.go` - Complete application (~1600 lines)
-  - Canvas data structure with dual-color cells
-  - Tool system (Point, Rectangle, Ellipse, Select)
-  - Shape drawing algorithms (Bresenham's rectangle, midpoint ellipse)
-  - Selection and clipboard system with transparency support
-  - Undo/redo history management (up to 50 levels)
-  - Picker rendering and interaction
-  - Column-by-column rendering to prevent ANSI bleed
+All source lives under `cmd/pixl/`:
+
+- `main.go` - Model struct, `initialModel()`, program entry
+- `input.go` - All keyboard and mouse event handling
+- `view.go` - Screen rendering with column-by-column composition
+- `tool_interface.go` - Tool interface + implementations
+- `tools.go` - Drawing algorithms (Bresenham, midpoint ellipse, flood fill)
+- `canvas.go` - Canvas data structure, file I/O
+- `history.go` - Undo/redo stack, clipboard ops
 
 ### How It Works
 

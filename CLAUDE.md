@@ -5,17 +5,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Test Commands
 
 ```bash
-go build -o pixl          # Build binary
-go test ./...             # Run all tests
-go test -run TestFoo      # Run a single test by name
-go test -v ./...          # Verbose test output
+go build -o pixl ./cmd/pixl   # Build binary
+go test ./...                 # Run all tests
+go test -run TestFoo ./...    # Run a single test by name
+go test -v ./...              # Verbose test output
 ```
 
 No linter or formatter is configured beyond standard Go tooling (`go vet`, `gofmt`).
 
 ## Architecture
 
-Pixl is a terminal-based pixel art editor built on **Bubble Tea** (Elm Architecture). The entire application is a single Go package (`package main`).
+Pixl is a terminal-based pixel art editor built on **Bubble Tea** (Elm Architecture). The entire application lives in `cmd/pixl/` as a single Go package (`package main`).
 
 ### Core Loop
 
