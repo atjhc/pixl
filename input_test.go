@@ -106,6 +106,186 @@ func TestResizeSavesHistory(t *testing.T) {
 	}
 }
 
+func TestMousePressStartsStroke(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedChar: "X",
+		foregroundColor: "red",
+		backgroundColor: "blue",
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		width:        10,
+		height:       11,
+	}
+	m.saveToHistory()
+
+	msg := tea.MouseMsg{X: 3, Y: controlBarHeight + 2, Type: tea.MouseLeft}
+	m.handleMouse(msg)
+
+	if !m.mouseDown {
+		t.Error("mouseDown should be true after left click")
+	}
+	if m.startX != 3 || m.startY != 2 {
+		t.Errorf("start = (%d,%d), want (3,2)", m.startX, m.startY)
+	}
+}
+
+func TestMouseDragDrawsPoints(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedChar: "X",
+		foregroundColor: "red",
+		backgroundColor: "blue",
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		width:        10,
+		height:       11,
+	}
+	m.saveToHistory()
+
+	// Press
+	m.handleMouse(tea.MouseMsg{X: 1, Y: controlBarHeight, Type: tea.MouseLeft})
+	// Drag
+	m.handleMouse(tea.MouseMsg{X: 2, Y: controlBarHeight, Type: tea.MouseLeft})
+	m.handleMouse(tea.MouseMsg{X: 3, Y: controlBarHeight, Type: tea.MouseLeft})
+
+	for _, col := range []int{1, 2, 3} {
+		cell := m.canvas.Get(0, col)
+		if cell == nil || cell.char != "X" {
+			t.Errorf("cell(0,%d) = %+v, want X", col, cell)
+		}
+	}
+}
+
+func TestMouseReleaseSavesHistory(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedChar: "X",
+		foregroundColor: "red",
+		backgroundColor: "blue",
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		width:        10,
+		height:       11,
+	}
+	m.saveToHistory()
+	histLen := len(m.history)
+
+	// Press + drag + release
+	m.handleMouse(tea.MouseMsg{X: 0, Y: controlBarHeight, Type: tea.MouseLeft})
+	m.handleMouse(tea.MouseMsg{X: 1, Y: controlBarHeight, Type: tea.MouseLeft})
+	m.handleMouse(tea.MouseMsg{X: 1, Y: controlBarHeight, Type: tea.MouseRelease})
+
+	if m.mouseDown {
+		t.Error("mouseDown should be false after release")
+	}
+	if len(m.history) <= histLen {
+		t.Error("history should have a new entry after stroke")
+	}
+}
+
+func TestMousePressOutsideFixedCanvasIgnored(t *testing.T) {
+	m := &model{
+		canvas:      NewCanvas(5, 5),
+		selectedChar: "X",
+		foregroundColor: "red",
+		backgroundColor: "blue",
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		width:       20,
+		height:      20,
+		fixedWidth:  5,
+		fixedHeight: 5,
+	}
+	m.saveToHistory()
+
+	// Click far outside the canvas area
+	msg := tea.MouseMsg{X: 0, Y: controlBarHeight, Type: tea.MouseLeft}
+	m.handleMouse(msg)
+
+	if m.mouseDown {
+		t.Error("click outside fixed canvas should not start stroke")
+	}
+}
+
+func TestToolbarToolClickToggles(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		width:        80,
+		height:       30,
+		toolbarToolX: 60,
+	}
+
+	// Click on the tool button area
+	msg := tea.MouseMsg{X: 65, Y: 0, Type: tea.MouseLeft}
+	m.handleMouse(msg)
+
+	if !m.showToolPicker {
+		t.Error("clicking tool button should open tool picker")
+	}
+
+	// Click again to close
+	m.handleMouse(msg)
+	if m.showToolPicker {
+		t.Error("clicking tool button again should close tool picker")
+	}
+}
+
+func TestToolbarFgClickToggles(t *testing.T) {
+	m := &model{
+		canvas:            NewCanvas(10, 10),
+		selectedTool:      "Point",
+		drawingTool:       "Point",
+		foregroundColor:   "white",
+		width:             80,
+		height:            30,
+		toolbarForegroundX: 10,
+		toolbarBackgroundX: 30,
+		toolbarToolX:       60,
+	}
+
+	msg := tea.MouseMsg{X: 15, Y: 0, Type: tea.MouseLeft}
+	m.handleMouse(msg)
+
+	if !m.showFgPicker {
+		t.Error("clicking fg button should open fg picker")
+	}
+	if m.showBgPicker || m.showToolPicker {
+		t.Error("other pickers should be closed")
+	}
+}
+
+func TestMouseReleaseWithShapeTool(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedChar: "X",
+		foregroundColor: "red",
+		backgroundColor: "transparent",
+		selectedTool: "Rectangle",
+		drawingTool:  "Rectangle",
+		width:        10,
+		height:       11,
+	}
+	m.saveToHistory()
+
+	// Press at (0,0)
+	m.handleMouse(tea.MouseMsg{X: 0, Y: controlBarHeight, Type: tea.MouseLeft})
+	// Drag to (4,4)
+	m.handleMouse(tea.MouseMsg{X: 4, Y: controlBarHeight + 4, Type: tea.MouseLeft})
+	// Release
+	m.handleMouse(tea.MouseMsg{X: 4, Y: controlBarHeight + 4, Type: tea.MouseRelease})
+
+	// Rectangle should be drawn — corners should have char
+	for _, pos := range [][2]int{{0, 0}, {0, 4}, {4, 0}, {4, 4}} {
+		cell := m.canvas.Get(pos[0], pos[1])
+		if cell == nil || cell.char != "X" {
+			t.Errorf("rectangle corner (%d,%d) = %+v, want X", pos[0], pos[1], cell)
+		}
+	}
+}
+
 func TestClampToCanvas(t *testing.T) {
 	m := &model{
 		canvas: NewCanvas(5, 5),

@@ -12,6 +12,9 @@ func (m *model) View() string {
 		return "Initializing..."
 	}
 
+	m.selectionStyle = lipgloss.NewStyle().Foreground(themeColor(m.config.Theme.SelectionFg))
+	m.cursorStyle = lipgloss.NewStyle().Foreground(themeColor(m.config.Theme.CursorFg))
+
 	canvasHeight := m.canvas.height
 
 	screenRows := m.height - controlBarHeight
@@ -274,7 +277,6 @@ func (m *model) renderCellAt(row, col int) string {
 		hasHeight := minY != maxY
 		if hasWidth && hasHeight && row >= minY && row <= maxY && col >= minX && col <= maxX {
 			if row == minY || row == maxY || col == minX || col == maxX {
-				highlightStyle := lipgloss.NewStyle().Foreground(themeColor(m.config.Theme.SelectionFg))
 				var char string
 				if row == minY && col == minX {
 					char = "┌"
@@ -289,7 +291,7 @@ func (m *model) renderCellAt(row, col int) string {
 				} else {
 					char = "┊"
 				}
-				return highlightStyle.Render(char)
+				return m.selectionStyle.Render(char)
 			}
 		}
 	}
@@ -297,12 +299,11 @@ func (m *model) renderCellAt(row, col int) string {
 	if !m.mouseDown &&
 		row == m.hoverRow && col == m.hoverCol &&
 		row >= 0 && row < m.canvas.height && col >= 0 && col < m.canvas.width {
-		ghostStyle := lipgloss.NewStyle().Foreground(themeColor(m.config.Theme.CursorFg))
 		cursorChar := m.selectedChar
 		if c := m.tool().CursorChar(m); c != "" {
 			cursorChar = c
 		}
-		return ghostStyle.Render(cursorChar)
+		return m.cursorStyle.Render(cursorChar)
 	}
 
 	cell := m.canvas.Get(row, col)

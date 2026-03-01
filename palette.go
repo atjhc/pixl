@@ -111,12 +111,17 @@ func colorDisplayName(name string) string {
 	return strings.ToUpper(display[:1]) + display[1:]
 }
 
-func colorStyleByName(name string) lipgloss.Style {
-	normalized := normalizeColorName(name)
+var colorStyleMap = func() map[string]lipgloss.Style {
+	m := make(map[string]lipgloss.Style, len(colors))
 	for _, c := range colors {
-		if c.name == normalized {
-			return c.style
-		}
+		m[c.name] = c.style
+	}
+	return m
+}()
+
+func colorStyleByName(name string) lipgloss.Style {
+	if s, ok := colorStyleMap[normalizeColorName(name)]; ok {
+		return s
 	}
 	return lipgloss.NewStyle()
 }

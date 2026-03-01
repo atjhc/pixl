@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
@@ -66,6 +67,9 @@ type model struct {
 	toolbarForegroundItemX int
 	toolbarBackgroundItemX int
 	toolbarToolItemX       int
+	// Cached styles (recomputed per frame)
+	selectionStyle lipgloss.Style
+	cursorStyle    lipgloss.Style
 }
 
 func initialModel() *model {
@@ -121,9 +125,9 @@ func main() {
 		}
 	}
 
-	stat, _ := os.Stdin.Stat()
-	if (stat.Mode() & os.ModeCharDevice) == 0 {
-		data, err := io.ReadAll(os.Stdin)
+	stat, err := os.Stdin.Stat()
+	if err == nil && (stat.Mode()&os.ModeCharDevice) == 0 {
+		data, err := io.ReadAll(io.LimitReader(os.Stdin, 10<<20))
 		if err == nil && len(data) > 0 {
 			stdinText = string(data)
 			m.canvas.LoadText(stdinText)

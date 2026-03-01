@@ -50,6 +50,22 @@ func TestThemeColorResolvesNames(t *testing.T) {
 	}
 }
 
+func TestIsValidThemeColorRejectsInvalidHex(t *testing.T) {
+	valid := []string{"#FF0000", "#aabbcc", "#123456", "red", "bright-blue", "42"}
+	for _, v := range valid {
+		if !isValidThemeColor(v) {
+			t.Errorf("isValidThemeColor(%q) = false, want true", v)
+		}
+	}
+
+	invalid := []string{"#zzzzzz", "#GGGGGG", "#12345g", "#nothex"}
+	for _, v := range invalid {
+		if isValidThemeColor(v) {
+			t.Errorf("isValidThemeColor(%q) = true, want false", v)
+		}
+	}
+}
+
 func TestThemeColorFallsThrough(t *testing.T) {
 	got := themeColor("#FF0000")
 	if string(got) != "#FF0000" {

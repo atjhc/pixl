@@ -138,9 +138,8 @@ func (m *model) floodFill(row, col int) {
 	visited := make(map[point]bool)
 	visited[point{row, col}] = true
 
-	for len(queue) > 0 {
-		p := queue[0]
-		queue = queue[1:]
+	for qi := 0; qi < len(queue); qi++ {
+		p := queue[qi]
 
 		cell := m.canvas.Get(p.r, p.c)
 		if cell == nil || cell.char != targetChar || cell.foregroundColor != targetFg || cell.backgroundColor != targetBg {
