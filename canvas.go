@@ -166,16 +166,12 @@ func (c *Canvas) Clear() {
 
 // Copy returns a deep copy of the canvas.
 func (c Canvas) Copy() Canvas {
-	newCanvas := NewCanvas(c.width, c.height)
-	for row := 0; row < c.height; row++ {
-		for col := 0; col < c.width; col++ {
-			cell := c.Get(row, col)
-			if cell != nil {
-				newCanvas.Set(row, col, cell.char, cell.foregroundColor, cell.backgroundColor)
-			}
-		}
+	cells := make([][]Cell, c.height)
+	for i := range cells {
+		cells[i] = make([]Cell, c.width)
+		copy(cells[i], c.cells[i])
 	}
-	return newCanvas
+	return Canvas{width: c.width, height: c.height, cells: cells}
 }
 
 // Equals returns true if every cell in both canvases matches.

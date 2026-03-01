@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 func TestScreenToCanvasVariableSize(t *testing.T) {
 	m := &model{
@@ -51,6 +55,54 @@ func TestScreenToCanvasFixedSize(t *testing.T) {
 	x, y = m.screenToCanvas(screenX+3, screenY+2)
 	if x != 3 || y != 2 {
 		t.Errorf("screenToCanvas offset = (%d,%d), want (3,2)", x, y)
+	}
+}
+
+func TestOptionKeyHeldClearsOnNonAltKey(t *testing.T) {
+	m := &model{
+		canvas: NewCanvas(5, 5),
+	}
+
+	// Simulate Alt key press
+	altMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}, Alt: true}
+	m.handleKey(altMsg)
+	if !m.optionKeyHeld {
+		t.Fatal("optionKeyHeld should be true after Alt key")
+	}
+
+	// Simulate non-Alt key press — should clear
+	plainMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}, Alt: false}
+	m.handleKey(plainMsg)
+	if m.optionKeyHeld {
+		t.Error("optionKeyHeld should be false after non-Alt key")
+	}
+}
+
+func TestResizeSavesHistory(t *testing.T) {
+	m := &model{
+		canvas: NewCanvas(10, 10),
+		width:  10,
+		height: 11, // 10 canvas rows + 1 control bar
+	}
+	m.canvas.Set(0, 0, "X", "red", "blue")
+	m.saveToHistory()
+
+	// Draw more content that will be lost on shrink
+	m.canvas.Set(9, 9, "Y", "green", "yellow")
+	m.saveToHistory()
+
+	// Shrink terminal so canvas loses bottom row
+	m.handleResize(tea.WindowSizeMsg{Width: 10, Height: 6}) // 5 canvas rows
+
+	// Cell at (9,9) is outside new canvas
+	if cell := m.canvas.Get(9, 9); cell != nil {
+		t.Error("cell (9,9) should be nil after shrink")
+	}
+
+	// Undo should restore pre-resize canvas with the lost cell
+	m.undo()
+	if cell := m.canvas.Get(9, 9); cell == nil || cell.char != "Y" {
+		t.Errorf("undo after resize should restore cell (9,9), got %+v", cell)
 	}
 }
 

@@ -209,6 +209,24 @@ cursor-fg = bright-cyan
 	}
 }
 
+func TestColorStyleByNameAcceptsHyphens(t *testing.T) {
+	// Config uses hyphens (bright-red), palette uses underscores (bright_red).
+	// colorStyleByName should accept either form.
+	style := colorStyleByName("bright-red")
+	expected := colorStyleByName("bright_red")
+	if style.GetForeground() != expected.GetForeground() {
+		t.Errorf("colorStyleByName(bright-red) != colorStyleByName(bright_red)")
+	}
+
+	// Same for ANSI code lookup
+	if code := colorToANSI("bright-red"); code != "91" {
+		t.Errorf("colorToANSI(bright-red) = %q, want 91", code)
+	}
+	if code := colorToANSIBg("bright-red"); code != "101" {
+		t.Errorf("colorToANSIBg(bright-red) = %q, want 101", code)
+	}
+}
+
 func TestLoadConfigThemePartialOverride(t *testing.T) {
 	writeTestConfig(t, "toolbar-bg = red\n")
 

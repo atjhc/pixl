@@ -45,6 +45,7 @@ func (m *model) handleResize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 	} else {
 		canvasHeight := m.height - controlBarHeight
 		if canvasHeight > 0 && (canvasHeight != m.canvas.height || m.width != m.canvas.width) {
+			m.saveToHistory()
 			newCanvas := NewCanvas(m.width, canvasHeight)
 			for row := 0; row < min(m.canvas.height, canvasHeight); row++ {
 				for col := 0; col < min(m.canvas.width, m.width); col++ {
@@ -65,9 +66,7 @@ func (m *model) handleResize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if msg.Alt {
-		m.optionKeyHeld = true
-	}
+	m.optionKeyHeld = msg.Alt
 
 	switch msg.String() {
 	case "1", "2", "3", "4", "5", "6", "7", "8", "9":

@@ -91,12 +91,16 @@ var ansiBgColorCodes = map[string]string{
 	"bright_white":   "107",
 }
 
+func normalizeColorName(name string) string {
+	return strings.ReplaceAll(name, "-", "_")
+}
+
 func colorToANSI(name string) string {
-	return ansiColorCodes[name]
+	return ansiColorCodes[normalizeColorName(name)]
 }
 
 func colorToANSIBg(name string) string {
-	return ansiBgColorCodes[name]
+	return ansiBgColorCodes[normalizeColorName(name)]
 }
 
 func colorDisplayName(name string) string {
@@ -108,8 +112,9 @@ func colorDisplayName(name string) string {
 }
 
 func colorStyleByName(name string) lipgloss.Style {
+	normalized := normalizeColorName(name)
 	for _, c := range colors {
-		if c.name == name {
+		if c.name == normalized {
 			return c.style
 		}
 	}
