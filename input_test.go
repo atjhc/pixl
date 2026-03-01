@@ -213,9 +213,9 @@ func TestToolbarToolClickToggles(t *testing.T) {
 		canvas:       NewCanvas(10, 10),
 		selectedTool: "Point",
 		drawingTool:  "Point",
-		width:        80,
-		height:       30,
-		toolbarToolX: 60,
+		width:   80,
+		height:  30,
+		toolbar: toolbarLayout{toolX: 60},
 	}
 
 	// Click on the tool button area
@@ -238,12 +238,10 @@ func TestToolbarFgClickToggles(t *testing.T) {
 		canvas:            NewCanvas(10, 10),
 		selectedTool:      "Point",
 		drawingTool:       "Point",
-		foregroundColor:   "white",
-		width:             80,
-		height:            30,
-		toolbarForegroundX: 10,
-		toolbarBackgroundX: 30,
-		toolbarToolX:       60,
+		foregroundColor: "white",
+		width:          80,
+		height:         30,
+		toolbar:        toolbarLayout{foregroundX: 10, backgroundX: 30, toolX: 60},
 	}
 
 	msg := tea.MouseMsg{X: 15, Y: 0, Type: tea.MouseLeft}
@@ -283,6 +281,35 @@ func TestMouseReleaseWithShapeTool(t *testing.T) {
 		if cell == nil || cell.char != "X" {
 			t.Errorf("rectangle corner (%d,%d) = %+v, want X", pos[0], pos[1], cell)
 		}
+	}
+}
+
+func TestColorPickerClickIndex(t *testing.T) {
+	m := &model{
+		canvas:  NewCanvas(80, 30),
+		width:   80,
+		height:  31,
+		toolbar: toolbarLayout{foregroundItemX: 10},
+	}
+
+	tests := []struct {
+		name string
+		x, y int
+		want int
+	}{
+		{"first color", 10, controlBarHeight + 1, 0},
+		{"second color", 10, controlBarHeight + 2, 1},
+		{"above picker", 10, controlBarHeight, -1},
+		{"left of picker", 0, controlBarHeight + 1, -1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg := tea.MouseMsg{X: tt.x, Y: tt.y, Type: tea.MouseLeft}
+			got := m.colorPickerClickIndex(msg, m.toolbar.foregroundItemX)
+			if got != tt.want {
+				t.Errorf("colorPickerClickIndex at (%d,%d) = %d, want %d", tt.x, tt.y, got, tt.want)
+			}
+		})
 	}
 }
 

@@ -36,6 +36,34 @@ func defaultTheme() Theme {
 	}
 }
 
+func (t *Theme) field(key string) *string {
+	switch key {
+	case "toolbar-bg":
+		return &t.ToolbarBg
+	case "toolbar-fg":
+		return &t.ToolbarFg
+	case "toolbar-highlight-bg":
+		return &t.ToolbarHighlightBg
+	case "toolbar-highlight-fg":
+		return &t.ToolbarHighlightFg
+	case "menu-border":
+		return &t.MenuBorder
+	case "menu-selected-bg":
+		return &t.MenuSelectedBg
+	case "menu-selected-fg":
+		return &t.MenuSelectedFg
+	case "menu-unfocused-bg":
+		return &t.MenuUnfocusedBg
+	case "canvas-border":
+		return &t.CanvasBorder
+	case "selection-fg":
+		return &t.SelectionFg
+	case "cursor-fg":
+		return &t.CursorFg
+	}
+	return nil
+}
+
 var themeColorNames = map[string]string{
 	"black":          "0",
 	"red":            "1",

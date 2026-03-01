@@ -58,8 +58,8 @@ func (m *model) renderControlBar() string {
 	} else {
 		fgButton = baseStyle.Render(fgText)
 	}
-	m.toolbarForegroundX = currentX + toolbarButtonPadding
-	m.toolbarForegroundItemX = currentX + 13
+	m.toolbar.foregroundX = currentX + toolbarButtonPadding
+	m.toolbar.foregroundItemX = currentX + 13
 	currentX += lipgloss.Width(fgButton)
 	currentX += 1 // separator
 
@@ -77,8 +77,8 @@ func (m *model) renderControlBar() string {
 	} else {
 		bgButton = baseStyle.Render(bgText)
 	}
-	m.toolbarBackgroundX = currentX + toolbarButtonPadding
-	m.toolbarBackgroundItemX = currentX + 13
+	m.toolbar.backgroundX = currentX + toolbarButtonPadding
+	m.toolbar.backgroundItemX = currentX + 13
 	currentX += lipgloss.Width(bgButton)
 	currentX += 1 // separator
 
@@ -91,14 +91,14 @@ func (m *model) renderControlBar() string {
 	} else {
 		toolButton = baseStyle.Render(toolText)
 	}
-	m.toolbarToolX = currentX + toolbarButtonPadding
-	m.toolbarToolItemX = currentX + 7
+	m.toolbar.toolX = currentX + toolbarButtonPadding
+	m.toolbar.toolItemX = currentX + 7
 	currentX += lipgloss.Width(toolButton)
 
 	// Mode indicator
 	modeIndicator := ""
-	if m.clipboard != nil && m.clipboardHeight > 0 && m.clipboardWidth > 0 {
-		modeText := fmt.Sprintf("Mode: Yank (%dx%d)", m.clipboardWidth, m.clipboardHeight)
+	if m.clipboard.cells != nil && m.clipboard.height > 0 && m.clipboard.width > 0 {
+		modeText := fmt.Sprintf("Mode: Yank (%dx%d)", m.clipboard.width, m.clipboard.height)
 		modeIndicator = baseStyle.Render(modeText)
 	}
 

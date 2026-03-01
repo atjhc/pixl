@@ -126,6 +126,11 @@ func colorStyleByName(name string) lipgloss.Style {
 	return lipgloss.NewStyle()
 }
 
+func isValidCanvasColor(name string) bool {
+	_, ok := colorStyleMap[normalizeColorName(name)]
+	return ok
+}
+
 func (m *model) findSelectedCharCategory() int {
 	for i, group := range characterGroups {
 		for _, char := range group.chars {

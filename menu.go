@@ -29,7 +29,7 @@ func (m *model) openMenu(idx int) {
 
 func (m *model) setTool(tool string) {
 	m.selectedTool = tool
-	m.hasSelection = false
+	m.selection.active = false
 	if isDrawingTool(tool) {
 		m.drawingTool = tool
 	}

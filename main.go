@@ -12,6 +12,29 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type toolbarLayout struct {
+	foregroundX     int
+	backgroundX     int
+	toolX           int
+	foregroundItemX int
+	backgroundItemX int
+	toolItemX       int
+}
+
+type selectionState struct {
+	active bool
+	startY int
+	startX int
+	endY   int
+	endX   int
+}
+
+type clipboardData struct {
+	cells  [][]Cell
+	width  int
+	height int
+}
+
 type model struct {
 	canvas             Canvas
 	selectedChar       string
@@ -43,14 +66,8 @@ type model struct {
 	circleMode         bool
 	boxStyle           int
 	previewPoints      map[[2]int]bool
-	hasSelection       bool
-	selectionStartY    int
-	selectionStartX    int
-	selectionEndY      int
-	selectionEndX      int
-	clipboard          [][]Cell
-	clipboardWidth     int
-	clipboardHeight    int
+	selection          selectionState
+	clipboard          clipboardData
 	hoverRow           int
 	hoverCol           int
 	lastMenu           int
@@ -59,14 +76,7 @@ type model struct {
 	fixedWidth         int
 	fixedHeight        int
 	canvasInitialized  bool
-	// Toolbar button positions (calculated during render)
-	toolbarForegroundX int
-	toolbarBackgroundX int
-	toolbarToolX       int
-	// Toolbar selected item positions (for popup alignment)
-	toolbarForegroundItemX int
-	toolbarBackgroundItemX int
-	toolbarToolItemX       int
+	toolbar            toolbarLayout
 	// Cached styles (recomputed per frame)
 	selectionStyle lipgloss.Style
 	cursorStyle    lipgloss.Style

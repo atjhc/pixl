@@ -48,17 +48,17 @@ func (m *model) View() string {
 		popup = m.renderColorPicker("Foreground")
 		popupLines = strings.Split(popup, "\n")
 		popupStartY = 0
-		popupX = m.toolbarForegroundItemX - pickerContentOffset
+		popupX = m.toolbar.foregroundItemX - pickerContentOffset
 	} else if m.showBgPicker {
 		popup = m.renderColorPicker("Background")
 		popupLines = strings.Split(popup, "\n")
 		popupStartY = 0
-		popupX = m.toolbarBackgroundItemX - pickerContentOffset
+		popupX = m.toolbar.backgroundItemX - pickerContentOffset
 	} else if m.showToolPicker {
 		popup = m.renderToolPicker()
 		popupLines = strings.Split(popup, "\n")
 		popupStartY = 0
-		popupX = m.toolbarToolItemX - pickerContentOffset
+		popupX = m.toolbar.toolItemX - pickerContentOffset
 
 		if m.toolHasSubmenu() {
 			popup2 = m.renderToolSubmenuPicker()
@@ -271,8 +271,8 @@ func (m *model) renderCellAt(row, col int) string {
 		}
 	}
 
-	if m.hasSelection {
-		minY, minX, maxY, maxX := normalizeRect(m.selectionStartY, m.selectionStartX, m.selectionEndY, m.selectionEndX)
+	if m.selection.active {
+		minY, minX, maxY, maxX := normalizeRect(m.selection.startY, m.selection.startX, m.selection.endY, m.selection.endX)
 		hasWidth := minX != maxX
 		hasHeight := minY != maxY
 		if hasWidth && hasHeight && row >= minY && row <= maxY && col >= minX && col <= maxX {

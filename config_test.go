@@ -148,6 +148,38 @@ func TestConfigAppliedToModelDefaults(t *testing.T) {
 	}
 }
 
+func TestConfigInvalidForegroundIgnored(t *testing.T) {
+	m := initialModel()
+	m.config = Config{DefaultForeground: "nonexistent"}
+	m.applyConfig()
+
+	if m.foregroundColor != "white" {
+		t.Errorf("foregroundColor = %q, want white (invalid color ignored)", m.foregroundColor)
+	}
+}
+
+func TestConfigInvalidBackgroundIgnored(t *testing.T) {
+	m := initialModel()
+	m.config = Config{DefaultBackground: "nonexistent"}
+	m.applyConfig()
+
+	if m.backgroundColor != "transparent" {
+		t.Errorf("backgroundColor = %q, want transparent (invalid color ignored)", m.backgroundColor)
+	}
+}
+
+func TestLoadConfigInvalidThemeColorIgnored(t *testing.T) {
+	writeTestConfig(t, "toolbar-bg = notacolor\ntoolbar-fg = red\n")
+
+	c := loadConfig()
+	if c.Theme.ToolbarBg != "cyan" {
+		t.Errorf("ToolbarBg = %q, want cyan (invalid value should keep default)", c.Theme.ToolbarBg)
+	}
+	if c.Theme.ToolbarFg != "red" {
+		t.Errorf("ToolbarFg = %q, want red (valid value should apply)", c.Theme.ToolbarFg)
+	}
+}
+
 func TestConfigInvalidToolIgnored(t *testing.T) {
 	m := initialModel()
 	m.config = Config{DefaultTool: "NonExistent"}

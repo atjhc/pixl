@@ -37,11 +37,11 @@ func (m *model) redo() {
 }
 
 func (m *model) copySelection() {
-	if !m.hasSelection {
+	if !m.selection.active {
 		return
 	}
 
-	minY, minX, maxY, maxX := normalizeRect(m.selectionStartY, m.selectionStartX, m.selectionEndY, m.selectionEndX)
+	minY, minX, maxY, maxX := normalizeRect(m.selection.startY, m.selection.startX, m.selection.endY, m.selection.endX)
 
 	// Internal region excludes the visual border
 	internalMinY := minY + 1
@@ -50,37 +50,37 @@ func (m *model) copySelection() {
 	internalMaxX := maxX - 1
 
 	if internalMaxY < internalMinY || internalMaxX < internalMinX {
-		m.clipboard = nil
-		m.clipboardWidth = 0
-		m.clipboardHeight = 0
+		m.clipboard.cells = nil
+		m.clipboard.width = 0
+		m.clipboard.height = 0
 		return
 	}
 
-	m.clipboardHeight = internalMaxY - internalMinY + 1
-	m.clipboardWidth = internalMaxX - internalMinX + 1
-	m.clipboard = make([][]Cell, m.clipboardHeight)
+	m.clipboard.height = internalMaxY - internalMinY + 1
+	m.clipboard.width = internalMaxX - internalMinX + 1
+	m.clipboard.cells = make([][]Cell, m.clipboard.height)
 
-	for y := 0; y < m.clipboardHeight; y++ {
-		m.clipboard[y] = make([]Cell, m.clipboardWidth)
-		for x := 0; x < m.clipboardWidth; x++ {
+	for y := 0; y < m.clipboard.height; y++ {
+		m.clipboard.cells[y] = make([]Cell, m.clipboard.width)
+		for x := 0; x < m.clipboard.width; x++ {
 			cell := m.canvas.Get(internalMinY+y, internalMinX+x)
 			if cell != nil {
-				m.clipboard[y][x] = *cell
+				m.clipboard.cells[y][x] = *cell
 			} else {
-				m.clipboard[y][x] = Cell{char: " ", foregroundColor: "transparent", backgroundColor: "transparent"}
+				m.clipboard.cells[y][x] = Cell{char: " ", foregroundColor: "transparent", backgroundColor: "transparent"}
 			}
 		}
 	}
 }
 
 func (m *model) cutSelection() {
-	if !m.hasSelection {
+	if !m.selection.active {
 		return
 	}
 
 	m.copySelection()
 
-	minY, minX, maxY, maxX := normalizeRect(m.selectionStartY, m.selectionStartX, m.selectionEndY, m.selectionEndX)
+	minY, minX, maxY, maxX := normalizeRect(m.selection.startY, m.selection.startX, m.selection.endY, m.selection.endX)
 
 	internalMinY := minY + 1
 	internalMaxY := maxY - 1
@@ -98,13 +98,13 @@ func (m *model) cutSelection() {
 }
 
 func (m *model) paste() {
-	if m.clipboard == nil || m.clipboardHeight == 0 || m.clipboardWidth == 0 {
+	if m.clipboard.cells == nil || m.clipboard.height == 0 || m.clipboard.width == 0 {
 		return
 	}
 
 	var originY, originX int
-	if m.hasSelection {
-		originY, originX, _, _ = normalizeRect(m.selectionStartY, m.selectionStartX, m.selectionEndY, m.selectionEndX)
+	if m.selection.active {
+		originY, originX, _, _ = normalizeRect(m.selection.startY, m.selection.startX, m.selection.endY, m.selection.endX)
 		// Selection border is visual-only; content starts 1 cell inside
 		originY++
 		originX++
@@ -115,15 +115,15 @@ func (m *model) paste() {
 		originX, originY = m.screenToCanvas(m.mouseX, m.mouseY)
 	}
 
-	for y := 0; y < m.clipboardHeight; y++ {
-		for x := 0; x < m.clipboardWidth; x++ {
+	for y := 0; y < m.clipboard.height; y++ {
+		for x := 0; x < m.clipboard.width; x++ {
 			targetY := originY + y
 			targetX := originX + x
 			if targetY < 0 || targetY >= m.canvas.height || targetX < 0 || targetX >= m.canvas.width {
 				continue
 			}
 
-			cell := m.clipboard[y][x]
+			cell := m.clipboard.cells[y][x]
 			existingCell := m.canvas.Get(targetY, targetX)
 
 			// Skip fully transparent cells
@@ -149,5 +149,5 @@ func (m *model) paste() {
 	}
 
 	m.saveToHistory()
-	m.hasSelection = false
+	m.selection.active = false
 }

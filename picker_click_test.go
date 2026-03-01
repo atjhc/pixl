@@ -36,7 +36,7 @@ func testGlyphsPickerClickTargets(t *testing.T, canvasW, canvasH, termW, termH, 
 			// Calculate popup positions matching view.go logic
 			popup := m.renderToolPicker()
 			popupLines := strings.Split(popup, "\n")
-			popupX := m.toolbarToolItemX - pickerContentOffset
+			popupX := m.toolbar.toolItemX - pickerContentOffset
 
 			popup2 := m.renderToolSubmenuPicker()
 			popup2Lines := strings.Split(popup2, "\n")
@@ -154,7 +154,7 @@ func TestDrawingToolPickerClickTargets(t *testing.T) {
 
 	toolPopup := m.renderToolPicker()
 	toolPopupLines := strings.Split(toolPopup, "\n")
-	toolPopupX := m.toolbarToolItemX - pickerContentOffset
+	toolPopupX := m.toolbar.toolItemX - pickerContentOffset
 	toolPickerWidth := 0
 	if len(toolPopupLines) > 0 {
 		toolPickerWidth = lipgloss.Width(toolPopupLines[0])
@@ -233,7 +233,7 @@ func TestBoxStylePickerClickTargets(t *testing.T) {
 
 	toolPopup := m.renderToolPicker()
 	toolPopupLines := strings.Split(toolPopup, "\n")
-	toolPopupX := m.toolbarToolItemX - pickerContentOffset
+	toolPopupX := m.toolbar.toolItemX - pickerContentOffset
 	toolPickerWidth := 0
 	if len(toolPopupLines) > 0 {
 		toolPickerWidth = lipgloss.Width(toolPopupLines[0])

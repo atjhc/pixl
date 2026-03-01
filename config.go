@@ -60,28 +60,10 @@ func loadConfig() Config {
 			c.DefaultTool = val
 		case "default-box-style":
 			c.DefaultBoxStyle = val
-		case "toolbar-bg":
-			c.Theme.ToolbarBg = val
-		case "toolbar-fg":
-			c.Theme.ToolbarFg = val
-		case "toolbar-highlight-bg":
-			c.Theme.ToolbarHighlightBg = val
-		case "toolbar-highlight-fg":
-			c.Theme.ToolbarHighlightFg = val
-		case "menu-border":
-			c.Theme.MenuBorder = val
-		case "menu-selected-bg":
-			c.Theme.MenuSelectedBg = val
-		case "menu-selected-fg":
-			c.Theme.MenuSelectedFg = val
-		case "menu-unfocused-bg":
-			c.Theme.MenuUnfocusedBg = val
-		case "canvas-border":
-			c.Theme.CanvasBorder = val
-		case "selection-fg":
-			c.Theme.SelectionFg = val
-		case "cursor-fg":
-			c.Theme.CursorFg = val
+		default:
+			if ptr := c.Theme.field(key); ptr != nil && isValidThemeColor(val) {
+				*ptr = val
+			}
 		}
 	}
 
@@ -92,10 +74,10 @@ func (m *model) applyConfig() {
 	if m.config.DefaultGlyph != "" {
 		m.selectedChar = m.config.DefaultGlyph
 	}
-	if m.config.DefaultForeground != "" {
+	if m.config.DefaultForeground != "" && isValidCanvasColor(m.config.DefaultForeground) {
 		m.foregroundColor = m.config.DefaultForeground
 	}
-	if m.config.DefaultBackground != "" {
+	if m.config.DefaultBackground != "" && isValidCanvasColor(m.config.DefaultBackground) {
 		m.backgroundColor = m.config.DefaultBackground
 	}
 	if m.config.DefaultTool != "" {

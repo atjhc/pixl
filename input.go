@@ -178,7 +178,7 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.showFgPicker = false
 		m.showBgPicker = false
 		m.showToolPicker = false
-		m.hasSelection = false
+		m.selection.active = false
 		m.toolPickerFocusLevel = 0
 		return m, nil
 	case "left":
@@ -338,60 +338,20 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	// Handle popup and menu clicks (only on initial click, not during drag)
 	if msg.Type == tea.MouseLeft && !m.mouseDown {
 		if m.showFgPicker {
-			pickerHeight := len(colors) + pickerBorderWidth
-			pickerTop := controlBarHeight
-			pickerLeft := m.toolbarForegroundItemX - pickerContentOffset
-
-			maxNameLen := 0
-			for _, c := range colors {
-				displayName := strings.ReplaceAll(c.name, "_", " ")
-				if len(displayName) > 0 {
-					displayName = strings.ToUpper(displayName[:1]) + displayName[1:]
-				}
-				if len(displayName) > maxNameLen {
-					maxNameLen = len(displayName)
-				}
-			}
-			pickerWidth := pickerBorderWidth + pickerItemPadding + pickerSwatchWidth + pickerItemSeparator + maxNameLen + pickerBorderWidth
-
-			if msg.Y >= pickerTop && msg.Y < pickerTop+pickerHeight &&
-				msg.X >= pickerLeft && msg.X < pickerLeft+pickerWidth {
-				colorIdx := msg.Y - pickerTop - 1
-				if colorIdx >= 0 && colorIdx < len(colors) {
-					m.foregroundColor = colors[colorIdx].name
-					return m, nil
-				}
+			if idx := m.colorPickerClickIndex(msg, m.toolbar.foregroundItemX); idx >= 0 {
+				m.foregroundColor = colors[idx].name
+				return m, nil
 			}
 		} else if m.showBgPicker {
-			pickerHeight := len(colors) + pickerBorderWidth
-			pickerTop := controlBarHeight
-			pickerLeft := m.toolbarBackgroundItemX - pickerContentOffset
-
-			maxNameLen := 0
-			for _, c := range colors {
-				displayName := strings.ReplaceAll(c.name, "_", " ")
-				if len(displayName) > 0 {
-					displayName = strings.ToUpper(displayName[:1]) + displayName[1:]
-				}
-				if len(displayName) > maxNameLen {
-					maxNameLen = len(displayName)
-				}
-			}
-			pickerWidth := pickerBorderWidth + pickerItemPadding + pickerSwatchWidth + pickerItemSeparator + maxNameLen + pickerBorderWidth
-
-			if msg.Y >= pickerTop && msg.Y < pickerTop+pickerHeight &&
-				msg.X >= pickerLeft && msg.X < pickerLeft+pickerWidth {
-				colorIdx := msg.Y - pickerTop - 1
-				if colorIdx >= 0 && colorIdx < len(colors) {
-					m.backgroundColor = colors[colorIdx].name
-					return m, nil
-				}
+			if idx := m.colorPickerClickIndex(msg, m.toolbar.backgroundItemX); idx >= 0 {
+				m.backgroundColor = colors[idx].name
+				return m, nil
 			}
 		} else if m.showToolPicker {
 			items := m.toolPickerItems()
 			pickerHeight := len(items) + pickerBorderWidth
 			pickerTop := controlBarHeight
-			pickerLeft := m.toolbarToolItemX - pickerContentOffset
+			pickerLeft := m.toolbar.toolItemX - pickerContentOffset
 
 			iconCol := 0
 			for _, item := range items {
@@ -517,17 +477,17 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 
 		// Check if clicking on control bar buttons
 		if msg.Y < controlBarHeight {
-			if m.toolbarToolX > 0 && msg.X >= m.toolbarToolX {
+			if m.toolbar.toolX > 0 && msg.X >= m.toolbar.toolX {
 				m.showToolPicker = !m.showToolPicker
 				m.showFgPicker = false
 				m.showBgPicker = false
 				return m, nil
-			} else if m.toolbarBackgroundX > 0 && msg.X >= m.toolbarBackgroundX && msg.X < m.toolbarToolX {
+			} else if m.toolbar.backgroundX > 0 && msg.X >= m.toolbar.backgroundX && msg.X < m.toolbar.toolX {
 				m.showBgPicker = !m.showBgPicker
 				m.showFgPicker = false
 				m.showToolPicker = false
 				return m, nil
-			} else if msg.X >= m.toolbarForegroundX && msg.X < m.toolbarBackgroundX {
+			} else if msg.X >= m.toolbar.foregroundX && msg.X < m.toolbar.backgroundX {
 				m.showFgPicker = !m.showFgPicker
 				m.showBgPicker = false
 				m.showToolPicker = false
@@ -588,6 +548,33 @@ func (m *model) screenToCanvas(screenX, screenY int) (canvasX, canvasY int) {
 		canvasX = screenX
 	}
 	return
+}
+
+func (m *model) colorPickerClickIndex(msg tea.MouseMsg, itemX int) int {
+	pickerHeight := len(colors) + pickerBorderWidth
+	pickerTop := controlBarHeight
+	pickerLeft := itemX - pickerContentOffset
+
+	maxNameLen := 0
+	for _, c := range colors {
+		displayName := strings.ReplaceAll(c.name, "_", " ")
+		if len(displayName) > 0 {
+			displayName = strings.ToUpper(displayName[:1]) + displayName[1:]
+		}
+		if len(displayName) > maxNameLen {
+			maxNameLen = len(displayName)
+		}
+	}
+	pickerWidth := pickerBorderWidth + pickerItemPadding + pickerSwatchWidth + pickerItemSeparator + maxNameLen + pickerBorderWidth
+
+	if msg.Y < pickerTop || msg.Y >= pickerTop+pickerHeight || msg.X < pickerLeft || msg.X >= pickerLeft+pickerWidth {
+		return -1
+	}
+	colorIdx := msg.Y - pickerTop - 1
+	if colorIdx < 0 || colorIdx >= len(colors) {
+		return -1
+	}
+	return colorIdx
 }
 
 func (m *model) clampToCanvas(y, x int) (int, int) {

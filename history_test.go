@@ -137,44 +137,44 @@ func TestCopyPasteRoundTrip(t *testing.T) {
 	m.canvas.Set(2, 2, "D", "white", "black")
 
 	// Selection border wraps the content, so select (0,0)-(3,3) to capture (1,1)-(2,2) internally
-	m.hasSelection = true
-	m.selectionStartY = 0
-	m.selectionStartX = 0
-	m.selectionEndY = 3
-	m.selectionEndX = 3
+	m.selection.active = true
+	m.selection.startY = 0
+	m.selection.startX = 0
+	m.selection.endY = 3
+	m.selection.endX = 3
 
 	m.copySelection()
 
-	if m.clipboardWidth != 2 || m.clipboardHeight != 2 {
-		t.Fatalf("clipboard size = %dx%d, want 2x2", m.clipboardWidth, m.clipboardHeight)
+	if m.clipboard.width != 2 || m.clipboard.height != 2 {
+		t.Fatalf("clipboard size = %dx%d, want 2x2", m.clipboard.width, m.clipboard.height)
 	}
 
 	// Paste at a different location via selection
-	m.hasSelection = true
-	m.selectionStartY = 0
-	m.selectionStartX = 0
-	m.selectionEndY = 3
-	m.selectionEndX = 3
+	m.selection.active = true
+	m.selection.startY = 0
+	m.selection.startX = 0
+	m.selection.endY = 3
+	m.selection.endX = 3
 
 	// Move paste target: select region starting at (0,3) so internal is (1,4)
-	m.selectionStartY = 0
-	m.selectionStartX = 3
-	m.selectionEndY = 3
-	m.selectionEndX = 3
+	m.selection.startY = 0
+	m.selection.startX = 3
+	m.selection.endY = 3
+	m.selection.endX = 3
 
 	// Instead, let's just verify clipboard content directly
-	if m.clipboard[0][0].char != "A" || m.clipboard[0][1].char != "B" {
-		t.Errorf("clipboard row 0 = [%q, %q], want [A, B]", m.clipboard[0][0].char, m.clipboard[0][1].char)
+	if m.clipboard.cells[0][0].char != "A" || m.clipboard.cells[0][1].char != "B" {
+		t.Errorf("clipboard row 0 = [%q, %q], want [A, B]", m.clipboard.cells[0][0].char, m.clipboard.cells[0][1].char)
 	}
-	if m.clipboard[1][0].char != "C" || m.clipboard[1][1].char != "D" {
-		t.Errorf("clipboard row 1 = [%q, %q], want [C, D]", m.clipboard[1][0].char, m.clipboard[1][1].char)
+	if m.clipboard.cells[1][0].char != "C" || m.clipboard.cells[1][1].char != "D" {
+		t.Errorf("clipboard row 1 = [%q, %q], want [C, D]", m.clipboard.cells[1][0].char, m.clipboard.cells[1][1].char)
 	}
 
 	// Paste at (0,0) selection to place content at (1,1) internal
-	m.selectionStartY = 0
-	m.selectionStartX = 0
-	m.selectionEndY = 3
-	m.selectionEndX = 3
+	m.selection.startY = 0
+	m.selection.startX = 0
+	m.selection.endY = 3
+	m.selection.endX = 3
 
 	// Clear target area first
 	m.canvas.Clear()
@@ -194,16 +194,16 @@ func TestCutSelectionClearsRegion(t *testing.T) {
 	m.canvas.Set(2, 2, "B", "green", "yellow")
 	m.saveToHistory()
 
-	m.hasSelection = true
-	m.selectionStartY = 0
-	m.selectionStartX = 0
-	m.selectionEndY = 3
-	m.selectionEndX = 3
+	m.selection.active = true
+	m.selection.startY = 0
+	m.selection.startX = 0
+	m.selection.endY = 3
+	m.selection.endX = 3
 
 	m.cutSelection()
 
 	// Clipboard should have content
-	if m.clipboard == nil {
+	if m.clipboard.cells == nil {
 		t.Fatal("clipboard is nil after cut")
 	}
 
@@ -227,10 +227,10 @@ func TestPasteWithNoClipboardIsNoop(t *testing.T) {
 
 func TestCopyWithNoSelectionIsNoop(t *testing.T) {
 	m := newHistoryModel()
-	m.hasSelection = false
+	m.selection.active = false
 	m.copySelection()
 
-	if m.clipboard != nil {
+	if m.clipboard.cells != nil {
 		t.Error("copy with no selection should not set clipboard")
 	}
 }
@@ -240,16 +240,16 @@ func TestPasteSkipsTransparentCells(t *testing.T) {
 	m.canvas.Set(1, 1, "Z", "red", "blue")
 
 	// Manually set clipboard with a transparent cell
-	m.clipboard = [][]Cell{
+	m.clipboard.cells = [][]Cell{
 		{{char: " ", foregroundColor: "transparent", backgroundColor: "transparent"}},
 	}
-	m.clipboardWidth = 1
-	m.clipboardHeight = 1
-	m.hasSelection = true
-	m.selectionStartY = 0
-	m.selectionStartX = 0
-	m.selectionEndY = 2
-	m.selectionEndX = 2
+	m.clipboard.width = 1
+	m.clipboard.height = 1
+	m.selection.active = true
+	m.selection.startY = 0
+	m.selection.startX = 0
+	m.selection.endY = 2
+	m.selection.endX = 2
 
 	m.paste()
 

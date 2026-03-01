@@ -401,7 +401,7 @@ func (t SelectTool) OnPress(m *model, y, x int) {
 	m.showPreview = true
 	m.previewEndX = x
 	m.previewEndY = y
-	m.hasSelection = false
+	m.selection.active = false
 }
 
 func (t SelectTool) OnDrag(m *model, y, x int) {
@@ -420,11 +420,11 @@ func (t SelectTool) OnRelease(m *model, y, x int) {
 		dx = -dx
 	}
 	if dy > 1 && dx > 1 {
-		m.hasSelection = true
-		m.selectionStartY = m.startY
-		m.selectionStartX = m.startX
-		m.selectionEndY = y
-		m.selectionEndX = x
+		m.selection.active = true
+		m.selection.startY = m.startY
+		m.selection.startX = m.startX
+		m.selection.endY = y
+		m.selection.endX = x
 	}
 }
 
