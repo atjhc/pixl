@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"strconv"
 	"strings"
 )
@@ -59,9 +60,10 @@ func (c *Canvas) LoadText(text string) {
 				if j < len(runes) {
 					params := string(runes[i+2 : j])
 					fg, bg = applyANSIParams(params, fg, bg)
-					i = j + 1
-					continue
 				}
+				// Skip past 'm' if found, or past entire malformed sequence
+				i = j + 1
+				continue
 			}
 
 			r := runes[i]
@@ -107,10 +109,8 @@ func visibleWidth(line string) int {
 			for j < len(runes) && runes[j] != 'm' {
 				j++
 			}
-			if j < len(runes) {
-				i = j + 1
-				continue
-			}
+			i = j + 1
+			continue
 		}
 		width++
 		i++
@@ -130,6 +130,14 @@ var ansiBgToName = map[int]string{
 	44: "blue", 45: "magenta", 46: "cyan", 47: "white",
 	100: "bright_black", 101: "bright_red", 102: "bright_green", 103: "bright_yellow",
 	104: "bright_blue", 105: "bright_magenta", 106: "bright_cyan", 107: "bright_white",
+}
+
+func saveFile(path, content string) error {
+	perm := os.FileMode(0666)
+	if info, err := os.Stat(path); err == nil {
+		perm = info.Mode().Perm()
+	}
+	return os.WriteFile(path, []byte(content), perm)
 }
 
 // Set sets a character and colors at the given position

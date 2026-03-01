@@ -172,7 +172,7 @@ func main() {
 		output := fm.renderCanvas()
 		if fm.filePath != "" {
 			output = fm.renderCanvasPlain()
-			if err := os.WriteFile(fm.filePath, []byte(output), 0644); err != nil {
+			if err := saveFile(fm.filePath, output); err != nil {
 				fmt.Fprintf(os.Stderr, "Error writing file: %v\n", err)
 				os.Exit(1)
 			}

@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestNewCanvas(t *testing.T) {
 	c := NewCanvas(3, 2)
@@ -264,6 +268,51 @@ func TestEqualsDifferentBg(t *testing.T) {
 	}
 }
 
+func TestLoadTextMalformedANSISkipped(t *testing.T) {
+	// Truncated escape at end of line should not garble preceding content
+	c := NewCanvas(5, 1)
+	c.LoadText("AB\x1b[31")
+
+	if cell := c.Get(0, 0); cell.char != "A" {
+		t.Errorf("(0,0).char = %q, want A", cell.char)
+	}
+	if cell := c.Get(0, 1); cell.char != "B" {
+		t.Errorf("(0,1).char = %q, want B", cell.char)
+	}
+	// Escape bytes should not appear as visible characters
+	if cell := c.Get(0, 2); cell.char != " " {
+		t.Errorf("(0,2).char = %q, want space (escape bytes should be skipped)", cell.char)
+	}
+}
+
+func TestLoadTextMalformedANSIBetweenChars(t *testing.T) {
+	// Malformed escape between valid chars: A then truncated escape then B on next line
+	c := NewCanvas(5, 2)
+	c.LoadText("A\x1b[31\nB")
+
+	if cell := c.Get(0, 0); cell.char != "A" {
+		t.Errorf("(0,0).char = %q, want A", cell.char)
+	}
+	// Malformed escape consumes rest of line
+	if cell := c.Get(0, 1); cell.char != " " {
+		t.Errorf("(0,1).char = %q, want space", cell.char)
+	}
+	if cell := c.Get(1, 0); cell.char != "B" {
+		t.Errorf("(1,0).char = %q, want B", cell.char)
+	}
+}
+
+func TestVisibleWidthMalformedANSI(t *testing.T) {
+	// Truncated escape at end should not count toward visible width
+	if got := visibleWidth("AB\x1b[31"); got != 2 {
+		t.Errorf("visibleWidth trailing malformed = %d, want 2", got)
+	}
+	// Valid escape followed by visible char
+	if got := visibleWidth("\x1b[31mA"); got != 1 {
+		t.Errorf("visibleWidth valid escape + char = %d, want 1", got)
+	}
+}
+
 func TestEqualsDifferentDimensions(t *testing.T) {
 	a := NewCanvas(3, 3)
 	b := NewCanvas(4, 3)
@@ -275,5 +324,55 @@ func TestEqualsDifferentDimensions(t *testing.T) {
 	c := NewCanvas(3, 4)
 	if a.Equals(c) {
 		t.Error("canvases with different heights should not be equal")
+	}
+}
+
+func TestSaveFilePreservesPermissions(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.txt")
+
+	// Create file with restrictive permissions
+	if err := os.WriteFile(path, []byte("old"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := saveFile(path, "new content"); err != nil {
+		t.Fatal(err)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0600 {
+		t.Errorf("permissions = %o, want 0600", info.Mode().Perm())
+	}
+
+	// Verify content was written
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "new content" {
+		t.Errorf("content = %q, want %q", string(data), "new content")
+	}
+}
+
+func TestSaveFileNewFileUses0666(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "new.txt")
+
+	if err := saveFile(path, "content"); err != nil {
+		t.Fatal(err)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// saveFile should use 0666 (not 0644) for new files so umask controls group/other
+	perm := info.Mode().Perm()
+	if perm&0644 != 0644 {
+		t.Errorf("new file permissions = %o, want at least 0644", perm)
 	}
 }
