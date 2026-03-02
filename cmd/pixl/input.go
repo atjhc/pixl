@@ -2,10 +2,13 @@ package main
 
 import (
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+type clearConfirmTimeout struct{}
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -15,6 +18,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleKey(msg)
 	case tea.MouseMsg:
 		return m.handleMouse(msg)
+	case clearConfirmTimeout:
+		m.confirmClear = false
+		return m, nil
 	}
 	return m, nil
 }
@@ -68,6 +74,10 @@ func (m *model) handleResize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.optionKeyHeld = msg.Alt
 
+	if m.confirmClear && msg.String() != "c" {
+		m.confirmClear = false
+	}
+
 	switch msg.String() {
 	case "1", "2", "3", "4", "5", "6", "7", "8", "9":
 		idx := int(msg.String()[0] - '1')
@@ -110,6 +120,13 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "ctrl+c", "q":
 		return m, tea.Quit
 	case "c":
+		if !m.confirmClear {
+			m.confirmClear = true
+			return m, tea.Tick(time.Second, func(time.Time) tea.Msg {
+				return clearConfirmTimeout{}
+			})
+		}
+		m.confirmClear = false
 		m.canvas.Clear()
 		m.saveToHistory()
 		return m, nil
@@ -334,6 +351,10 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	hoverX, hoverY := m.screenToCanvas(m.mouseX, m.mouseY)
 	m.hoverRow = hoverY
 	m.hoverCol = hoverX
+
+	if m.confirmClear && msg.Type == tea.MouseLeft {
+		m.confirmClear = false
+	}
 
 	// Handle popup and menu clicks (only on initial click, not during drag)
 	if msg.Type == tea.MouseLeft && !m.mouseDown {

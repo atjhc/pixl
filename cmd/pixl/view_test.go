@@ -295,6 +295,42 @@ func TestRenderCanvasPlainWhiteIsDefault(t *testing.T) {
 	}
 }
 
+func TestConfirmClearDialogRendered(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(40, 10),
+		selectedChar: "●",
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		width:        40,
+		height:       11,
+		ready:        true,
+		confirmClear: true,
+	}
+
+	got := m.View()
+	if !strings.Contains(got, "Clear canvas?") {
+		t.Error("view should contain confirmation dialog when confirmClear is true")
+	}
+}
+
+func TestConfirmClearDialogNotRendered(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(40, 10),
+		selectedChar: "●",
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		width:        40,
+		height:       11,
+		ready:        true,
+		confirmClear: false,
+	}
+
+	got := m.View()
+	if strings.Contains(got, "Clear canvas?") {
+		t.Error("view should not contain confirmation dialog when confirmClear is false")
+	}
+}
+
 func TestCanvasOffsetClamps(t *testing.T) {
 	m := &model{
 		canvas:      NewCanvas(100, 100),

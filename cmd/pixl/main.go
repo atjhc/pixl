@@ -75,6 +75,7 @@ type model struct {
 	filePath           string
 	fixedWidth         int
 	fixedHeight        int
+	confirmClear       bool
 	canvasInitialized  bool
 	toolbar            toolbarLayout
 	// Cached styles (recomputed per frame)

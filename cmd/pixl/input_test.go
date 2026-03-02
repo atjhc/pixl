@@ -313,6 +313,153 @@ func TestColorPickerClickIndex(t *testing.T) {
 	}
 }
 
+func TestClearCanvasRequiresConfirmation(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+	}
+	m.canvas.Set(0, 0, "X", "red", "blue")
+	m.saveToHistory()
+
+	c := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}}
+
+	// First c: should NOT clear, should show confirmation
+	m.handleKey(c)
+	cell := m.canvas.Get(0, 0)
+	if cell == nil || cell.char != "X" {
+		t.Error("first c should not clear the canvas")
+	}
+	if !m.confirmClear {
+		t.Error("first c should set confirmClear")
+	}
+
+	// Second c: should clear the canvas
+	m.handleKey(c)
+	cell = m.canvas.Get(0, 0)
+	if cell == nil || cell.char != " " || cell.foregroundColor != "white" {
+		t.Errorf("second c should clear the canvas, got %+v", cell)
+	}
+	if m.confirmClear {
+		t.Error("confirmClear should be reset after clearing")
+	}
+}
+
+func TestClearCanvasConfirmationCancelledByOtherKey(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+	}
+	m.canvas.Set(0, 0, "X", "red", "blue")
+	m.saveToHistory()
+
+	c := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}}
+	m.handleKey(c)
+	if !m.confirmClear {
+		t.Fatal("first c should set confirmClear")
+	}
+
+	// Press a different key — should cancel
+	other := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}}
+	m.handleKey(other)
+	if m.confirmClear {
+		t.Error("non-c key should cancel confirmClear")
+	}
+
+	// Canvas should be intact
+	cell := m.canvas.Get(0, 0)
+	if cell == nil || cell.char != "X" {
+		t.Error("canvas should not be cleared after cancellation")
+	}
+}
+
+func TestClearCanvasConfirmationCancelledByEsc(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+	}
+	m.canvas.Set(0, 0, "X", "red", "blue")
+	m.saveToHistory()
+
+	c := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}}
+	m.handleKey(c)
+	if !m.confirmClear {
+		t.Fatal("first c should set confirmClear")
+	}
+
+	esc := tea.KeyMsg{Type: tea.KeyEscape}
+	m.handleKey(esc)
+	if m.confirmClear {
+		t.Error("esc should cancel confirmClear")
+	}
+
+	cell := m.canvas.Get(0, 0)
+	if cell == nil || cell.char != "X" {
+		t.Error("canvas should not be cleared after esc cancellation")
+	}
+}
+
+func TestClearCanvasConfirmationDismissedByTimeout(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+	}
+	m.canvas.Set(0, 0, "X", "red", "blue")
+	m.saveToHistory()
+	m.confirmClear = true
+
+	// Simulate timeout message
+	m.Update(clearConfirmTimeout{})
+	if m.confirmClear {
+		t.Error("timeout should dismiss confirmClear")
+	}
+
+	cell := m.canvas.Get(0, 0)
+	if cell == nil || cell.char != "X" {
+		t.Error("canvas should not be cleared by timeout")
+	}
+}
+
+func TestClearCanvasConfirmationDismissedByMousePress(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		selectedChar: "X",
+		foregroundColor: "red",
+		backgroundColor: "blue",
+		width:        10,
+		height:       11,
+	}
+	m.canvas.Set(0, 0, "X", "red", "blue")
+	m.saveToHistory()
+	m.confirmClear = true
+
+	msg := tea.MouseMsg{X: 3, Y: controlBarHeight + 2, Type: tea.MouseLeft}
+	m.handleMouse(msg)
+	if m.confirmClear {
+		t.Error("mouse press should dismiss confirmClear")
+	}
+}
+
+func TestClearCanvasFirstCReturnsTickCmd(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+	}
+	m.saveToHistory()
+
+	c := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}}
+	_, cmd := m.handleKey(c)
+	if cmd == nil {
+		t.Error("first c should return a tick command for auto-dismiss")
+	}
+}
+
 func TestEscClosesMenuBeforeClearingSelection(t *testing.T) {
 	m := &model{
 		canvas:       NewCanvas(10, 10),

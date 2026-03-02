@@ -115,6 +115,28 @@ func (m *model) View() string {
 		}
 	}
 
+	// Confirmation dialog overlay
+	var dialogLines []string
+	var dialogX, dialogY int
+	if m.confirmClear {
+		dialogStyle := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(themeColor(m.config.Theme.MenuBorder)).
+			Padding(0, 1)
+		accentStyle := lipgloss.NewStyle().Foreground(themeColor(m.config.Theme.ToolbarHighlightBg))
+		dialog := dialogStyle.Render("Clear canvas? Press " + accentStyle.Render("c") + " to confirm")
+		dialogLines = strings.Split(dialog, "\n")
+		dialogWidth := lipgloss.Width(dialogLines[0])
+		dialogX = (m.width - dialogWidth) / 2
+		dialogY = (screenRows - len(dialogLines)) / 2
+		if dialogX < 0 {
+			dialogX = 0
+		}
+		if dialogY < 0 {
+			dialogY = 0
+		}
+	}
+
 	// Render screen rows
 	offY, offX := m.canvasOffset()
 	borderStyle := lipgloss.NewStyle().Foreground(themeColor(m.config.Theme.CanvasBorder))
@@ -180,6 +202,18 @@ func (m *model) View() string {
 				if col >= popup4X && col < popup4X+popup4Width {
 					if col == popup4X {
 						lineBuilder.WriteString("\x1b[0m" + popup4Line)
+					}
+					inPopup = true
+				}
+			}
+
+			if !inPopup && dialogLines != nil && i >= dialogY && i < dialogY+len(dialogLines) {
+				dLineIdx := i - dialogY
+				dLine := dialogLines[dLineIdx]
+				dWidth := lipgloss.Width(dLine)
+				if col >= dialogX && col < dialogX+dWidth {
+					if col == dialogX {
+						lineBuilder.WriteString("\x1b[0m" + dLine)
 					}
 					inPopup = true
 				}
