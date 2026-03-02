@@ -44,6 +44,9 @@ func (m *model) openMenu(idx int) {
 func (m *model) setTool(tool string) {
 	m.selectedTool = tool
 	m.selection.active = false
+	if tool != "Text" {
+		m.textInsertActive = false
+	}
 	if isDrawingTool(tool) {
 		m.drawingTool = tool
 	}
@@ -65,15 +68,20 @@ type toolPickerItem struct {
 	selected bool
 }
 
-var topLevelTools = []string{"Box", "Fill", "Select"}
+var topLevelTools = []string{"Text", "Box", "Fill", "Select"}
 
 func (m *model) toolPickerItems() []toolPickerItem {
-	items := make([]toolPickerItem, 0, 4)
+	items := make([]toolPickerItem, 0, 5)
 
 	// Drawing tools group
 	items = append(items, toolPickerItem{
 		name:     "Draw",
 		selected: isDrawingTool(m.selectedTool),
+	})
+
+	items = append(items, toolPickerItem{
+		name:     "Text",
+		selected: m.selectedTool == "Text",
 	})
 
 	items = append(items, toolPickerItem{

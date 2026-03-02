@@ -83,6 +83,12 @@ type model struct {
 	showPalette        bool
 	paletteQuery       string
 	paletteIndex       int
+	textInsertActive   bool
+	textInsertRow      int
+	textInsertCol      int
+	textInsertStartX   int
+	textCursorBlink    bool
+	textCursorTicking  bool
 	canvasInitialized  bool
 	toolbar            toolbarLayout
 	// Cached styles (recomputed per frame)

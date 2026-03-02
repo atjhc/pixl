@@ -21,6 +21,7 @@ func (m *model) paletteItems() []paletteItem {
 		{"Line", func(m *model) { m.setTool("Line") }},
 		{"Fill", func(m *model) { m.setTool("Fill") }},
 		{"Select", func(m *model) { m.setTool("Select") }},
+		{"Text", func(m *model) { m.setTool("Text") }},
 	}
 
 	for i, s := range boxStyles {

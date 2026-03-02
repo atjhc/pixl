@@ -9,6 +9,7 @@ import (
 )
 
 type clearConfirmTimeout struct{}
+type textCursorTick struct{}
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -21,6 +22,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case clearConfirmTimeout:
 		m.confirmClear = false
 		return m, nil
+	case textCursorTick:
+		if !m.textInsertActive {
+			m.textCursorTicking = false
+			return m, nil
+		}
+		m.textCursorBlink = !m.textCursorBlink
+		return m, tea.Tick(500*time.Millisecond, func(time.Time) tea.Msg {
+			return textCursorTick{}
+		})
 	}
 	return m, nil
 }
@@ -76,6 +86,10 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	if m.showPalette {
 		return m.handlePaletteKey(msg)
+	}
+
+	if m.textInsertActive && m.selectedTool == "Text" {
+		return m.handleTextKey(msg)
 	}
 
 	if m.confirmClear && msg.String() != "c" {
@@ -353,6 +367,68 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m *model) handleTextKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.Type {
+	case tea.KeyEscape:
+		m.textInsertActive = false
+		return m, nil
+	case tea.KeyEnter:
+		m.textInsertRow++
+		m.textInsertCol = m.textInsertStartX
+		m.textCursorBlink = true
+		return m, nil
+	case tea.KeyBackspace:
+		if m.textInsertCol <= 0 {
+			return m, nil
+		}
+		if msg.Alt {
+			// Delete word: skip spaces, then non-spaces
+			for m.textInsertCol > 0 {
+				cell := m.canvas.Get(m.textInsertRow, m.textInsertCol-1)
+				if cell == nil || cell.char != " " {
+					break
+				}
+				m.textInsertCol--
+				m.canvas.Set(m.textInsertRow, m.textInsertCol, " ", "white", "transparent")
+			}
+			for m.textInsertCol > 0 {
+				cell := m.canvas.Get(m.textInsertRow, m.textInsertCol-1)
+				if cell != nil && cell.char == " " {
+					break
+				}
+				m.textInsertCol--
+				m.canvas.Set(m.textInsertRow, m.textInsertCol, " ", "white", "transparent")
+			}
+		} else {
+			m.textInsertCol--
+			m.canvas.Set(m.textInsertRow, m.textInsertCol, " ", "white", "transparent")
+		}
+		m.saveToHistory()
+		m.textCursorBlink = true
+		return m, nil
+	case tea.KeySpace:
+		if m.textInsertRow < m.canvas.height &&
+			m.textInsertCol >= 0 && m.textInsertCol < m.canvas.width {
+			m.canvas.Set(m.textInsertRow, m.textInsertCol, " ", m.foregroundColor, m.backgroundColor)
+			m.textInsertCol++
+			m.saveToHistory()
+		}
+		m.textCursorBlink = true
+		return m, nil
+	case tea.KeyRunes:
+		ch := string(msg.Runes)
+		if m.textInsertRow < m.canvas.height &&
+			m.textInsertCol >= 0 && m.textInsertCol < m.canvas.width {
+			m.canvas.Set(m.textInsertRow, m.textInsertCol, ch, m.foregroundColor, m.backgroundColor)
+			m.textInsertCol++
+			m.saveToHistory()
+		}
+		m.textCursorBlink = true
+		return m, nil
+	}
+	return m, nil
+}
+
 func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	m.mouseX = msg.X
 	m.mouseY = msg.Y
@@ -548,6 +624,12 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		m.startX = cx
 		m.startY = cy
 		m.tool().OnPress(m, cy, cx)
+		if m.selectedTool == "Text" && !m.textCursorTicking {
+			m.textCursorTicking = true
+			return m, tea.Tick(500*time.Millisecond, func(time.Time) tea.Msg {
+				return textCursorTick{}
+			})
+		}
 	}
 
 	// Handle drag events

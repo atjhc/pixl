@@ -24,6 +24,7 @@ var toolRegistry = []Tool{
 	LineTool{},
 	FillTool{},
 	SelectTool{},
+	TextTool{},
 }
 
 func (m *model) tool() Tool {
@@ -458,4 +459,25 @@ func (t SelectTool) RenderPreview(m *model, row, col int) (string, bool) {
 		char = "┊"
 	}
 	return dimStyle.Render(char), true
+}
+
+// TextTool — type text directly onto the canvas.
+
+type TextTool struct{}
+
+func (t TextTool) Name() string                              { return "Text" }
+func (t TextTool) DisplayName(_ *model) string               { return "Text" }
+func (t TextTool) CursorChar(_ *model) string                { return "▏" }
+func (t TextTool) ModifiesCanvas() bool                      { return true }
+func (t TextTool) OnKeyPress(_ *model, _ string) bool        { return false }
+func (t TextTool) OnDrag(_ *model, _, _ int)                 {}
+func (t TextTool) OnRelease(_ *model, _, _ int)              {}
+func (t TextTool) RenderPreview(_ *model, _, _ int) (string, bool) { return "", false }
+
+func (t TextTool) OnPress(m *model, y, x int) {
+	m.textInsertActive = true
+	m.textInsertRow = y
+	m.textInsertCol = x
+	m.textInsertStartX = x
+	m.textCursorBlink = true
 }

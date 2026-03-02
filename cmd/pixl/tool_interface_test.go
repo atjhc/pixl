@@ -160,7 +160,7 @@ func TestBoxToolRenderPreviewNoMergeWhenDisabled(t *testing.T) {
 }
 
 func TestToolRegistryOrderAndNames(t *testing.T) {
-	expected := []string{"Point", "Rectangle", "Box", "Ellipse", "Line", "Fill", "Select"}
+	expected := []string{"Point", "Rectangle", "Box", "Ellipse", "Line", "Fill", "Select", "Text"}
 
 	if len(toolRegistry) != len(expected) {
 		t.Fatalf("toolRegistry has %d tools, want %d", len(toolRegistry), len(expected))
@@ -317,8 +317,8 @@ func TestToolPickerItems(t *testing.T) {
 	m.selectedTool = "Point"
 
 	items := m.toolPickerItems()
-	if len(items) != 4 {
-		t.Fatalf("toolPickerItems count = %d, want 4", len(items))
+	if len(items) != 5 {
+		t.Fatalf("toolPickerItems count = %d, want 5", len(items))
 	}
 
 	// First item should always show "Draw"
@@ -329,14 +329,17 @@ func TestToolPickerItems(t *testing.T) {
 		t.Error("item 0 should be selected when tool is Point")
 	}
 
-	if items[1].name != "Box" {
-		t.Errorf("item 1 name = %q, want Box", items[1].name)
+	if items[1].name != "Text" {
+		t.Errorf("item 1 name = %q, want Text", items[1].name)
 	}
-	if items[2].name != "Fill" {
-		t.Errorf("item 2 name = %q, want Fill", items[2].name)
+	if items[2].name != "Box" {
+		t.Errorf("item 2 name = %q, want Box", items[2].name)
 	}
-	if items[3].name != "Select" {
-		t.Errorf("item 3 name = %q, want Select", items[3].name)
+	if items[3].name != "Fill" {
+		t.Errorf("item 3 name = %q, want Fill", items[3].name)
+	}
+	if items[4].name != "Select" {
+		t.Errorf("item 4 name = %q, want Select", items[4].name)
 	}
 }
 
@@ -362,7 +365,7 @@ func TestToolPickerItemsBoxSelected(t *testing.T) {
 	if items[0].selected {
 		t.Error("drawing group should not be selected when Box is active")
 	}
-	if !items[1].selected {
+	if !items[2].selected {
 		t.Error("Box item should be selected")
 	}
 }
@@ -381,25 +384,31 @@ func TestToolPickerUpDownNavigation(t *testing.T) {
 		showToolPicker:  true,
 	}
 
-	// Down from drawing group (index 0) should go to Box (index 1)
+	// Down from drawing group (index 0) should go to Text (index 1)
 	m.handleKey(tea.KeyMsg{Type: tea.KeyDown})
-	if m.selectedTool != "Box" {
-		t.Errorf("down from drawing group: selectedTool = %q, want Box", m.selectedTool)
+	if m.selectedTool != "Text" {
+		t.Errorf("down from drawing group: selectedTool = %q, want Text", m.selectedTool)
 	}
 
-	// Down from Box (index 1) should go to Fill (index 2)
+	// Down from Text (index 1) should go to Box (index 2)
+	m.handleKey(tea.KeyMsg{Type: tea.KeyDown})
+	if m.selectedTool != "Box" {
+		t.Errorf("down from Text: selectedTool = %q, want Box", m.selectedTool)
+	}
+
+	// Down from Box (index 2) should go to Fill (index 3)
 	m.handleKey(tea.KeyMsg{Type: tea.KeyDown})
 	if m.selectedTool != "Fill" {
 		t.Errorf("down from Box: selectedTool = %q, want Fill", m.selectedTool)
 	}
 
-	// Down from Fill (index 2) should go to Select (index 3)
+	// Down from Fill (index 3) should go to Select (index 4)
 	m.handleKey(tea.KeyMsg{Type: tea.KeyDown})
 	if m.selectedTool != "Select" {
 		t.Errorf("down from Fill: selectedTool = %q, want Select", m.selectedTool)
 	}
 
-	// Down from Select (index 3) should stay at Select
+	// Down from Select (index 4) should stay at Select
 	m.handleKey(tea.KeyMsg{Type: tea.KeyDown})
 	if m.selectedTool != "Select" {
 		t.Errorf("down at bottom: selectedTool = %q, want Select", m.selectedTool)
@@ -412,6 +421,7 @@ func TestToolPickerUpDownNavigation(t *testing.T) {
 	}
 
 	// Up all the way back to drawing group should restore Point
+	m.handleKey(tea.KeyMsg{Type: tea.KeyUp})
 	m.handleKey(tea.KeyMsg{Type: tea.KeyUp})
 	m.handleKey(tea.KeyMsg{Type: tea.KeyUp})
 	if m.selectedTool != "Point" {
@@ -434,13 +444,15 @@ func TestToolPickerRemembersDrawingTool(t *testing.T) {
 	}
 
 	// Navigate away from drawing group
+	m.handleKey(tea.KeyMsg{Type: tea.KeyDown}) // Text
 	m.handleKey(tea.KeyMsg{Type: tea.KeyDown}) // Box
 	if m.selectedTool != "Box" {
 		t.Fatalf("expected Box, got %q", m.selectedTool)
 	}
 
 	// Navigate back - should restore Rectangle
-	m.handleKey(tea.KeyMsg{Type: tea.KeyUp})
+	m.handleKey(tea.KeyMsg{Type: tea.KeyUp}) // Text
+	m.handleKey(tea.KeyMsg{Type: tea.KeyUp}) // Draw
 	if m.selectedTool != "Rectangle" {
 		t.Errorf("should restore drawing tool Rectangle, got %q", m.selectedTool)
 	}
@@ -584,16 +596,16 @@ func TestToolPickerNumberKeysTopLevel(t *testing.T) {
 		showToolPicker:  true,
 	}
 
-	// Press 2 to select Box
+	// Press 2 to select Text
 	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}})
-	if m.selectedTool != "Box" {
-		t.Errorf("key 2 top-level: expected Box, got %q", m.selectedTool)
+	if m.selectedTool != "Text" {
+		t.Errorf("key 2 top-level: expected Text, got %q", m.selectedTool)
 	}
 
-	// Press 3 to select Fill
+	// Press 3 to select Box
 	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'3'}})
-	if m.selectedTool != "Fill" {
-		t.Errorf("key 3 top-level: expected Fill, got %q", m.selectedTool)
+	if m.selectedTool != "Box" {
+		t.Errorf("key 3 top-level: expected Box, got %q", m.selectedTool)
 	}
 
 	// Press 1 to select drawing group (should restore last drawing tool)

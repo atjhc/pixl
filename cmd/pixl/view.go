@@ -294,8 +294,19 @@ func (m *model) renderCellAt(row, col int) string {
 		}
 	}
 
+	if m.textInsertActive && row == m.textInsertRow && col == m.textInsertCol {
+		if m.textCursorBlink {
+			style := colorStyleByName(m.foregroundColor)
+			return style.Reverse(true).Render(" ")
+		}
+	}
+
 	if !m.mouseDown && m.cursorVisible &&
 		row == m.hoverRow && col == m.hoverCol {
+		if m.selectedTool == "Text" {
+			style := colorStyleByName(m.foregroundColor)
+			return style.Reverse(true).Render(" ")
+		}
 		if c := m.tool().CursorChar(m); c != "" {
 			return m.cursorStyle.Render(c)
 		}
