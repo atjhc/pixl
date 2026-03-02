@@ -76,6 +76,9 @@ type model struct {
 	fixedWidth         int
 	fixedHeight        int
 	confirmClear       bool
+	showPalette        bool
+	paletteQuery       string
+	paletteIndex       int
 	canvasInitialized  bool
 	toolbar            toolbarLayout
 	// Cached styles (recomputed per frame)

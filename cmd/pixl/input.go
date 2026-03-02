@@ -74,6 +74,10 @@ func (m *model) handleResize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.optionKeyHeld = msg.Alt
 
+	if m.showPalette {
+		return m.handlePaletteKey(msg)
+	}
+
 	if m.confirmClear && msg.String() != "c" {
 		m.confirmClear = false
 	}
@@ -138,6 +142,11 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "x":
 		m.foregroundColor, m.backgroundColor = m.backgroundColor, m.foregroundColor
+		return m, nil
+	case ":":
+		m.showPalette = true
+		m.paletteQuery = ""
+		m.paletteIndex = 0
 		return m, nil
 	case "y":
 		m.copySelection()

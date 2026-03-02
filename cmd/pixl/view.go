@@ -115,10 +115,22 @@ func (m *model) View() string {
 		}
 	}
 
-	// Confirmation dialog overlay
+	// Modal dialog overlay (confirm-clear or command palette)
 	var dialogLines []string
 	var dialogX, dialogY int
-	if m.confirmClear {
+	if m.showPalette {
+		dialog := m.renderPalette()
+		dialogLines = strings.Split(dialog, "\n")
+		dialogWidth := lipgloss.Width(dialogLines[0])
+		dialogX = (m.width - dialogWidth) / 2
+		dialogY = (screenRows - len(dialogLines)) / 2
+		if dialogX < 0 {
+			dialogX = 0
+		}
+		if dialogY < 0 {
+			dialogY = 0
+		}
+	} else if m.confirmClear {
 		dialogStyle := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(themeColor(m.config.Theme.MenuBorder)).
