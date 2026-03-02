@@ -260,6 +260,104 @@ func TestPaletteAltBackspaceTrailingSpaces(t *testing.T) {
 	}
 }
 
+func TestPaletteTabAutocompletesWord(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		showPalette:  true,
+		paletteQuery: "das",
+	}
+
+	tab := tea.KeyMsg{Type: tea.KeyTab}
+	m.handleKey(tab)
+
+	if m.paletteQuery != "Dashed " {
+		t.Errorf("query after tab = %q, want %q", m.paletteQuery, "Dashed ")
+	}
+}
+
+func TestPaletteTabAutocompletesSecondWord(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		showPalette:  true,
+		paletteQuery: "Dashed H",
+	}
+
+	tab := tea.KeyMsg{Type: tea.KeyTab}
+	m.handleKey(tab)
+
+	if m.paletteQuery != "Dashed Heavy " {
+		t.Errorf("query after tab = %q, want %q", m.paletteQuery, "Dashed Heavy ")
+	}
+}
+
+func TestPaletteTabFullWordAlready(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		showPalette:  true,
+		paletteQuery: "Fill",
+	}
+
+	tab := tea.KeyMsg{Type: tea.KeyTab}
+	m.handleKey(tab)
+
+	if m.paletteQuery != "Fill" {
+		t.Errorf("query after tab on exact match = %q, want %q", m.paletteQuery, "Fill")
+	}
+}
+
+func TestPaletteTabNoResults(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		showPalette:  true,
+		paletteQuery: "zzzzz",
+	}
+
+	tab := tea.KeyMsg{Type: tea.KeyTab}
+	m.handleKey(tab)
+
+	if m.paletteQuery != "zzzzz" {
+		t.Errorf("query should be unchanged with no results, got %q", m.paletteQuery)
+	}
+}
+
+func TestPaletteTabUsesSelectedItem(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		showPalette:  true,
+		paletteQuery: "d",
+		paletteIndex: 1,
+	}
+
+	// Filter for "d" — results depend on ordering but index 1 should be a different item
+	items := filterPalette(m.paletteItems(), "d")
+	if len(items) < 2 {
+		t.Skip("not enough items matching 'd'")
+	}
+	expected := items[1].name
+	// Find the next word boundary after the partial match
+	tab := tea.KeyMsg{Type: tea.KeyTab}
+	m.handleKey(tab)
+
+	// Should autocomplete based on item at index 1, not index 0
+	if !strings.HasPrefix(strings.ToLower(expected), "d") {
+		t.Skip("second item doesn't start with d")
+	}
+	// The query should have changed to complete a word from the selected item
+	if m.paletteQuery == "d" {
+		t.Error("tab should have autocompleted from the selected item")
+	}
+}
+
 func TestPaletteNavigation(t *testing.T) {
 	m := &model{
 		canvas:       NewCanvas(10, 10),

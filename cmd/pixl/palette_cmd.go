@@ -111,6 +111,12 @@ func (m *model) handlePaletteKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.paletteIndex++
 		}
 		return m, nil
+	case tea.KeyTab:
+		items := filterPalette(m.paletteItems(), m.paletteQuery)
+		if m.paletteIndex < len(items) {
+			m.paletteQuery = tabComplete(m.paletteQuery, items[m.paletteIndex].name)
+		}
+		return m, nil
 	case tea.KeySpace:
 		m.paletteQuery += " "
 		m.paletteIndex = 0
@@ -141,6 +147,34 @@ func deleteWord(s string) string {
 	return s[:i]
 }
 
+func tabComplete(query, target string) string {
+	lower := strings.ToLower(target)
+	q := strings.ToLower(query)
+
+	// Find where the query matches within the target
+	idx := strings.Index(lower, q)
+	if idx < 0 {
+		return query
+	}
+
+	// Find the end of the current word being typed
+	pos := idx + len(query)
+	if pos >= len(target) {
+		return query
+	}
+
+	// Extend to the end of the next word in the target
+	for pos < len(target) && target[pos] != ' ' {
+		pos++
+	}
+	// Include the trailing space if there is one
+	if pos < len(target) && target[pos] == ' ' {
+		pos++
+	}
+
+	return target[:pos]
+}
+
 func (m *model) closePalette() {
 	m.showPalette = false
 	m.paletteQuery = ""
@@ -152,7 +186,8 @@ func (m *model) renderPalette() string {
 	selectedFg := themeColor(m.config.Theme.MenuSelectedFg)
 
 	selectedStyle := lipgloss.NewStyle().
-		Foreground(selectedFg)
+		Foreground(selectedFg).Bold(true)
+	dimStyle := lipgloss.NewStyle().Faint(true)
 
 	items := filterPalette(m.paletteItems(), m.paletteQuery)
 
@@ -191,7 +226,7 @@ func (m *model) renderPalette() string {
 	for i, item := range visible {
 		var line string
 		if i == m.paletteIndex {
-			line = "▸ " + item.name
+			line = "→ " + item.name
 		} else {
 			line = "  " + item.name
 		}
@@ -200,6 +235,8 @@ func (m *model) renderPalette() string {
 		}
 		if i == m.paletteIndex {
 			line = selectedStyle.Render(line)
+		} else {
+			line = dimStyle.Render(line)
 		}
 		content.WriteString(line)
 		if i < len(visible)-1 {
