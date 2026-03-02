@@ -137,11 +137,9 @@ func (m *model) closePalette() {
 
 func (m *model) renderPalette() string {
 	borderColor := themeColor(m.config.Theme.MenuBorder)
-	selectedBg := themeColor(m.config.Theme.MenuSelectedBg)
 	selectedFg := themeColor(m.config.Theme.MenuSelectedFg)
 
 	selectedStyle := lipgloss.NewStyle().
-		Background(selectedBg).
 		Foreground(selectedFg)
 
 	items := filterPalette(m.paletteItems(), m.paletteQuery)
