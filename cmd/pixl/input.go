@@ -136,6 +136,9 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "r":
 		m.redo()
 		return m, nil
+	case "x":
+		m.foregroundColor, m.backgroundColor = m.backgroundColor, m.foregroundColor
+		return m, nil
 	case "y":
 		m.copySelection()
 		return m, nil

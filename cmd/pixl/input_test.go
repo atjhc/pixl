@@ -401,6 +401,46 @@ func TestClearCanvasConfirmationCancelledByEsc(t *testing.T) {
 	}
 }
 
+func TestSwapForegroundBackground(t *testing.T) {
+	m := &model{
+		canvas:          NewCanvas(10, 10),
+		selectedTool:    "Point",
+		drawingTool:     "Point",
+		foregroundColor: "red",
+		backgroundColor: "blue",
+	}
+
+	x := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}}
+	m.handleKey(x)
+
+	if m.foregroundColor != "blue" {
+		t.Errorf("foreground should be blue after swap, got %s", m.foregroundColor)
+	}
+	if m.backgroundColor != "red" {
+		t.Errorf("background should be red after swap, got %s", m.backgroundColor)
+	}
+}
+
+func TestSwapForegroundBackgroundWithTransparent(t *testing.T) {
+	m := &model{
+		canvas:          NewCanvas(10, 10),
+		selectedTool:    "Point",
+		drawingTool:     "Point",
+		foregroundColor: "white",
+		backgroundColor: "transparent",
+	}
+
+	x := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}}
+	m.handleKey(x)
+
+	if m.foregroundColor != "transparent" {
+		t.Errorf("foreground should be transparent after swap, got %s", m.foregroundColor)
+	}
+	if m.backgroundColor != "white" {
+		t.Errorf("background should be white after swap, got %s", m.backgroundColor)
+	}
+}
+
 func TestClearCanvasConfirmationDismissedByTimeout(t *testing.T) {
 	m := &model{
 		canvas:       NewCanvas(10, 10),
