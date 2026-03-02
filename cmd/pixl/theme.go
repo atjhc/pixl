@@ -22,10 +22,10 @@ type Theme struct {
 
 func defaultTheme() Theme {
 	return Theme{
-		ToolbarBg:          "cyan",
-		ToolbarFg:          "bright-white",
-		ToolbarHighlightBg: "bright-cyan",
-		ToolbarHighlightFg: "bright-white",
+		ToolbarBg:          "",
+		ToolbarFg:          "",
+		ToolbarHighlightBg: "",
+		ToolbarHighlightFg: "",
 		MenuBorder:         "bright-blue",
 		MenuSelectedBg:     "bright-cyan",
 		MenuSelectedFg:     "bright-white",

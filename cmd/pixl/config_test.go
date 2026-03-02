@@ -172,8 +172,8 @@ func TestLoadConfigInvalidThemeColorIgnored(t *testing.T) {
 	writeTestConfig(t, "toolbar-bg = notacolor\ntoolbar-fg = red\n")
 
 	c := loadConfig()
-	if c.Theme.ToolbarBg != "cyan" {
-		t.Errorf("ToolbarBg = %q, want cyan (invalid value should keep default)", c.Theme.ToolbarBg)
+	if c.Theme.ToolbarBg != "" {
+		t.Errorf("ToolbarBg = %q, want empty (invalid value should keep default)", c.Theme.ToolbarBg)
 	}
 	if c.Theme.ToolbarFg != "red" {
 		t.Errorf("ToolbarFg = %q, want red (valid value should apply)", c.Theme.ToolbarFg)
@@ -267,8 +267,8 @@ func TestLoadConfigThemePartialOverride(t *testing.T) {
 	if c.Theme.ToolbarBg != "red" {
 		t.Errorf("ToolbarBg = %q, want red", c.Theme.ToolbarBg)
 	}
-	if c.Theme.ToolbarFg != "bright-white" {
-		t.Errorf("ToolbarFg = %q, want bright-white (default)", c.Theme.ToolbarFg)
+	if c.Theme.ToolbarFg != "" {
+		t.Errorf("ToolbarFg = %q, want empty (default)", c.Theme.ToolbarFg)
 	}
 	if c.Theme.MenuBorder != "bright-blue" {
 		t.Errorf("MenuBorder = %q, want bright-blue (default)", c.Theme.MenuBorder)

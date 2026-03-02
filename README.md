@@ -76,10 +76,10 @@ default-foreground = white
 default-tool = Point
 
 # Theme (defaults shown)
-toolbar-bg = cyan
-toolbar-fg = bright-white
-toolbar-highlight-bg = bright-cyan
-toolbar-highlight-fg = bright-white
+toolbar-bg =
+toolbar-fg =
+toolbar-highlight-bg =
+toolbar-highlight-fg =
 menu-border = bright-blue
 menu-selected-bg = bright-cyan
 menu-selected-fg = bright-white

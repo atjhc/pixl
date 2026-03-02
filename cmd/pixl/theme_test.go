@@ -10,10 +10,10 @@ func TestDefaultTheme(t *testing.T) {
 		got  string
 		want string
 	}{
-		{"ToolbarBg", th.ToolbarBg, "cyan"},
-		{"ToolbarFg", th.ToolbarFg, "bright-white"},
-		{"ToolbarHighlightBg", th.ToolbarHighlightBg, "bright-cyan"},
-		{"ToolbarHighlightFg", th.ToolbarHighlightFg, "bright-white"},
+		{"ToolbarBg", th.ToolbarBg, ""},
+		{"ToolbarFg", th.ToolbarFg, ""},
+		{"ToolbarHighlightBg", th.ToolbarHighlightBg, ""},
+		{"ToolbarHighlightFg", th.ToolbarHighlightFg, ""},
 		{"MenuBorder", th.MenuBorder, "bright-blue"},
 		{"MenuSelectedBg", th.MenuSelectedBg, "bright-cyan"},
 		{"MenuSelectedFg", th.MenuSelectedFg, "bright-white"},
