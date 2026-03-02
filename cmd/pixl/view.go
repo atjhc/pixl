@@ -287,7 +287,7 @@ func (m *model) renderCellAt(row, col int) string {
 				} else if row == minY || row == maxY {
 					char = "╌"
 				} else {
-					char = "┊"
+					char = "┆"
 				}
 				return m.selectionStyle.Render(char)
 			}
