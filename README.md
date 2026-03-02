@@ -60,9 +60,13 @@ Extended color support in three groups:
 - `p` - Paste at cursor
 
 **Other:**
+- `:` - Open command palette (fuzzy search for tools and actions)
 - `Return` - Toggle Circle/Ellipse mode (when Ellipse tool selected)
-- `Esc` - Close open pickers / Clear selection
+- `Esc` - Close open pickers / Clear selection / Exit text mode
 - `q` or `Ctrl+C` - Quit
+
+**Copying text from the canvas:**
+- Hold **Option** and click-drag (Terminal.app) or **Shift** and click-drag (iTerm2) to select text using your terminal's native selection, then Cmd+C to copy to the system clipboard.
 
 ### Configuration
 
