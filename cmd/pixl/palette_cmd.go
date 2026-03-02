@@ -13,32 +13,44 @@ type paletteItem struct {
 }
 
 func (m *model) paletteItems() []paletteItem {
-	return []paletteItem{
+	items := []paletteItem{
 		{"Point", func(m *model) { m.setTool("Point") }},
 		{"Rectangle", func(m *model) { m.setTool("Rectangle") }},
-		{"Ellipse", func(m *model) { m.setTool("Ellipse") }},
+		{"Ellipse", func(m *model) { m.setTool("Ellipse"); m.circleMode = false }},
 		{"Circle", func(m *model) { m.setTool("Ellipse"); m.circleMode = true }},
 		{"Line", func(m *model) { m.setTool("Line") }},
 		{"Fill", func(m *model) { m.setTool("Fill") }},
-		{"Box", func(m *model) { m.setTool("Box") }},
 		{"Select", func(m *model) { m.setTool("Select") }},
-		{"Clear Canvas", func(m *model) { m.confirmClear = true }},
-		{"Undo", func(m *model) { m.undo() }},
-		{"Redo", func(m *model) { m.redo() }},
-		{"Copy", func(m *model) { m.copySelection() }},
-		{"Cut", func(m *model) { m.cutSelection() }},
-		{"Paste", func(m *model) { m.paste() }},
-		{"Swap Colors", func(m *model) {
+	}
+
+	for i, s := range boxStyles {
+		idx := i
+		items = append(items, paletteItem{
+			s.name + " Box",
+			func(m *model) { m.setTool("Box"); m.boxStyle = idx },
+		})
+	}
+
+	items = append(items,
+		paletteItem{"Clear Canvas", func(m *model) { m.confirmClear = true }},
+		paletteItem{"Undo", func(m *model) { m.undo() }},
+		paletteItem{"Redo", func(m *model) { m.redo() }},
+		paletteItem{"Copy", func(m *model) { m.copySelection() }},
+		paletteItem{"Cut", func(m *model) { m.cutSelection() }},
+		paletteItem{"Paste", func(m *model) { m.paste() }},
+		paletteItem{"Swap Colors", func(m *model) {
 			m.foregroundColor, m.backgroundColor = m.backgroundColor, m.foregroundColor
 		}},
-		{"Eyedropper", func(m *model) {
+		paletteItem{"Eyedropper", func(m *model) {
 			if cell := m.canvas.Get(m.hoverRow, m.hoverCol); cell != nil {
 				m.selectedChar = cell.char
 				m.foregroundColor = cell.foregroundColor
 				m.backgroundColor = cell.backgroundColor
 			}
 		}},
-	}
+	)
+
+	return items
 }
 
 func filterPalette(items []paletteItem, query string) []paletteItem {
