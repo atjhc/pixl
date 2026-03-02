@@ -296,11 +296,10 @@ func (m *model) renderCellAt(row, col int) string {
 
 	if !m.mouseDown && m.cursorVisible &&
 		row == m.hoverRow && col == m.hoverCol {
-		cursorChar := m.selectedChar
 		if c := m.tool().CursorChar(m); c != "" {
-			cursorChar = c
+			return m.cursorStyle.Render(c)
 		}
-		return m.cursorStyle.Render(cursorChar)
+		return m.styledChar()
 	}
 
 	cell := m.canvas.Get(row, col)
