@@ -500,6 +500,49 @@ func TestClearCanvasFirstCReturnsTickCmd(t *testing.T) {
 	}
 }
 
+func TestCursorNotVisibleOnLaunch(t *testing.T) {
+	m := initialModel()
+	if m.cursorVisible {
+		t.Error("cursor should not be visible on launch")
+	}
+}
+
+func TestCursorVisibleWhenMouseOverCanvas(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		width:        10,
+		height:       11,
+	}
+
+	msg := tea.MouseMsg{X: 5, Y: controlBarHeight + 3, Type: tea.MouseMotion}
+	m.handleMouse(msg)
+
+	if !m.cursorVisible {
+		t.Error("cursor should be visible when mouse is over canvas")
+	}
+}
+
+func TestCursorNotVisibleWhenMouseLeavesCanvas(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+		width:        10,
+		height:       11,
+		cursorVisible: true,
+	}
+
+	// Move mouse to toolbar area (above canvas)
+	msg := tea.MouseMsg{X: 5, Y: 0, Type: tea.MouseMotion}
+	m.handleMouse(msg)
+
+	if m.cursorVisible {
+		t.Error("cursor should not be visible when mouse leaves canvas")
+	}
+}
+
 func TestEyedropperSamplesCell(t *testing.T) {
 	m := &model{
 		canvas:          NewCanvas(10, 10),

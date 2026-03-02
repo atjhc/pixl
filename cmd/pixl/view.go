@@ -342,9 +342,8 @@ func (m *model) renderCellAt(row, col int) string {
 		}
 	}
 
-	if !m.mouseDown &&
-		row == m.hoverRow && col == m.hoverCol &&
-		row >= 0 && row < m.canvas.height && col >= 0 && col < m.canvas.width {
+	if !m.mouseDown && m.cursorVisible &&
+		row == m.hoverRow && col == m.hoverCol {
 		cursorChar := m.selectedChar
 		if c := m.tool().CursorChar(m); c != "" {
 			cursorChar = c

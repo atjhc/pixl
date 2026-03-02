@@ -70,6 +70,7 @@ type model struct {
 	clipboard          clipboardData
 	hoverRow           int
 	hoverCol           int
+	cursorVisible      bool
 	lastMenu           int
 	config             Config
 	filePath           string

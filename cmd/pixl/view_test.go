@@ -115,11 +115,12 @@ func TestCanvasOffsetNoFixedSize(t *testing.T) {
 
 func TestGhostPreviewAtHover(t *testing.T) {
 	m := &model{
-		canvas:       NewCanvas(10, 10),
-		selectedChar: "●",
-		selectedTool: "Point",
-		hoverRow:     3,
-		hoverCol:     5,
+		canvas:        NewCanvas(10, 10),
+		selectedChar:  "●",
+		selectedTool:  "Point",
+		hoverRow:      3,
+		hoverCol:      5,
+		cursorVisible: true,
 	}
 
 	got := m.renderCellAt(3, 5)
@@ -154,6 +155,7 @@ func TestCursorShownWithMenuOpen(t *testing.T) {
 		selectedTool:   "Point",
 		hoverRow:       3,
 		hoverCol:       5,
+		cursorVisible:  true,
 		showToolPicker: true,
 	}
 
@@ -168,11 +170,12 @@ func TestCursorForPaintingTools(t *testing.T) {
 	for _, tool := range []string{"Rectangle", "Ellipse", "Fill", "Line"} {
 		t.Run(tool, func(t *testing.T) {
 			m := &model{
-				canvas:       NewCanvas(10, 10),
-				selectedChar: "●",
-				selectedTool: tool,
-				hoverRow:     3,
-				hoverCol:     5,
+				canvas:        NewCanvas(10, 10),
+				selectedChar:  "●",
+				selectedTool:  tool,
+				hoverRow:      3,
+				hoverCol:      5,
+				cursorVisible: true,
 			}
 
 			got := m.renderCellAt(3, 5)
@@ -186,11 +189,12 @@ func TestCursorForPaintingTools(t *testing.T) {
 
 func TestCrosshairCursorForSelectTool(t *testing.T) {
 	m := &model{
-		canvas:       NewCanvas(10, 10),
-		selectedChar: "●",
-		selectedTool: "Select",
-		hoverRow:     3,
-		hoverCol:     5,
+		canvas:        NewCanvas(10, 10),
+		selectedChar:  "●",
+		selectedTool:  "Select",
+		hoverRow:      3,
+		hoverCol:      5,
+		cursorVisible: true,
 	}
 
 	got := m.renderCellAt(3, 5)

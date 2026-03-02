@@ -371,6 +371,7 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	hoverX, hoverY := m.screenToCanvas(m.mouseX, m.mouseY)
 	m.hoverRow = hoverY
 	m.hoverCol = hoverX
+	m.cursorVisible = hoverY >= 0 && hoverY < m.canvas.height && hoverX >= 0 && hoverX < m.canvas.width
 
 	if m.confirmClear && msg.Type == tea.MouseLeft {
 		m.confirmClear = false
