@@ -216,7 +216,7 @@ func (m *model) renderBoxStylePicker() string {
 
 	var content strings.Builder
 	for i, s := range boxStyles {
-		line := fmt.Sprintf(" %s%s %s ", s.tl, s.tr, s.name)
+		line := fmt.Sprintf(" %s %s ", s.h, s.name)
 
 		if i == m.boxStyle {
 			content.WriteString(selectedStyle.Render(line))

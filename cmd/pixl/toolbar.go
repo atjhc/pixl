@@ -101,6 +101,9 @@ func (m *model) renderControlBar() string {
 
 	// Tool button
 	toolName := m.tool().DisplayName(m)
+	if m.selectedTool == "Box" {
+		toolName = boxStyles[m.boxStyle].h + " " + boxStyles[m.boxStyle].name + " " + toolName
+	}
 	toolText := fmt.Sprintf("%sT%sool: %s", underlineOn, underlineOff, toolName)
 	var toolButton string
 	if m.showToolPicker {

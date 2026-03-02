@@ -104,7 +104,10 @@ var boxStyles = []boxStyle{
 	{"Double", "═", "║", "╔", "╗", "╚", "╝", "╠", "╣", "╦", "╩", "╬"},
 	{"Rounded", "─", "│", "╭", "╮", "╰", "╯", "├", "┤", "┬", "┴", "┼"},
 	{"Heavy", "━", "┃", "┏", "┓", "┗", "┛", "┣", "┫", "┳", "┻", "╋"},
-	{"Dashed", "┄", "┆", "┌", "┐", "└", "┘", "", "", "", "", ""},
+	{"Dashed", "╌", "┊", "┌", "┐", "└", "┘", "", "", "", "", ""},
+	{"Dashed Heavy", "╍", "┋", "┏", "┓", "┗", "┛", "", "", "", "", ""},
+	{"Dense Dashed", "┈", "┆", "┌", "┐", "└", "┘", "", "", "", "", ""},
+	{"Dense Heavy", "┉", "┇", "┏", "┓", "┗", "┛", "", "", "", "", ""},
 }
 
 func (s *boxStyle) dirs(ch string) (up, down, left, right, ok bool) {
@@ -179,10 +182,7 @@ func (s *boxStyle) fromDirs(up, down, left, right bool) string {
 }
 
 func (t BoxTool) Name() string { return "Box" }
-func (t BoxTool) DisplayName(m *model) string {
-	s := boxStyles[m.boxStyle]
-	return s.tl + s.tr + " Box"
-}
+func (t BoxTool) DisplayName(_ *model) string { return "Box" }
 func (t BoxTool) CursorChar(m *model) string  { return boxStyles[m.boxStyle].tl }
 func (t BoxTool) ModifiesCanvas() bool        { return true }
 

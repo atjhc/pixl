@@ -61,14 +61,11 @@ func (m *model) toolPickerItems() []toolPickerItem {
 
 	// Drawing tools group
 	items = append(items, toolPickerItem{
-		icon:     m.selectedChar,
 		name:     "Draw",
 		selected: isDrawingTool(m.selectedTool),
 	})
 
-	s := boxStyles[m.boxStyle]
 	items = append(items, toolPickerItem{
-		icon:     s.tl + s.tr,
 		name:     "Box",
 		selected: m.selectedTool == "Box",
 	})

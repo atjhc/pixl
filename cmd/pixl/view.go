@@ -285,7 +285,7 @@ func (m *model) renderCellAt(row, col int) string {
 				} else if row == maxY && col == maxX {
 					char = "┘"
 				} else if row == minY || row == maxY {
-					char = "┈"
+					char = "╌"
 				} else {
 					char = "┊"
 				}

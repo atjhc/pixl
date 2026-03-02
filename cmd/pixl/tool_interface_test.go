@@ -245,9 +245,12 @@ func TestBoxToolCyclesStyles(t *testing.T) {
 		t.Errorf("after 2 enters, boxStyle = %d, want 2", m.boxStyle)
 	}
 
-	// Cycle through all 5 styles back to 0
+	// Cycle through all 8 styles back to 0
 	m.tool().OnKeyPress(m, "enter") // 3
 	m.tool().OnKeyPress(m, "enter") // 4
+	m.tool().OnKeyPress(m, "enter") // 5
+	m.tool().OnKeyPress(m, "enter") // 6
+	m.tool().OnKeyPress(m, "enter") // 7
 	m.tool().OnKeyPress(m, "enter") // 0
 	if m.boxStyle != 0 {
 		t.Errorf("after wrapping, boxStyle = %d, want 0", m.boxStyle)
@@ -258,14 +261,8 @@ func TestBoxToolDisplayName(t *testing.T) {
 	m := newTestModel(10, 10)
 	m.selectedTool = "Box"
 
-	m.boxStyle = 0
-	if got := m.tool().DisplayName(m); got != "┌┐ Box" {
-		t.Errorf("DisplayName style 0 = %q, want %q", got, "┌┐ Box")
-	}
-
-	m.boxStyle = 1
-	if got := m.tool().DisplayName(m); got != "╔╗ Box" {
-		t.Errorf("DisplayName style 1 = %q, want %q", got, "╔╗ Box")
+	if got := m.tool().DisplayName(m); got != "Box" {
+		t.Errorf("DisplayName = %q, want %q", got, "Box")
 	}
 }
 
@@ -332,9 +329,6 @@ func TestToolPickerItems(t *testing.T) {
 		t.Error("item 0 should be selected when tool is Point")
 	}
 
-	if items[1].icon != "┌┐" {
-		t.Errorf("item 1 icon = %q, want ┌┐", items[1].icon)
-	}
 	if items[1].name != "Box" {
 		t.Errorf("item 1 name = %q, want Box", items[1].name)
 	}
