@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -83,6 +84,7 @@ type model struct {
 	showPalette        bool
 	paletteQuery       string
 	paletteIndex       int
+	alertMessage       string
 	textInsertActive   bool
 	textInsertRow      int
 	textInsertCol      int
@@ -113,6 +115,12 @@ func initialModel() *model {
 }
 
 func (m *model) Init() tea.Cmd {
+	if len(m.config.Warnings) > 0 {
+		m.alertMessage = "Config:\n" + strings.Join(m.config.Warnings, "\n")
+		return tea.Tick(5*time.Second, func(time.Time) tea.Msg {
+			return alertTimeout{}
+		})
+	}
 	return nil
 }
 

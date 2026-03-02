@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,7 @@ type Config struct {
 	DefaultTool       string
 	DefaultBoxStyle   string
 	Theme             Theme
+	Warnings          []string
 }
 
 func loadConfig() Config {
@@ -51,23 +53,67 @@ func loadConfig() Config {
 		case "merge-box-borders":
 			c.MergeBoxBorders = val == "true"
 		case "default-glyph":
-			c.DefaultGlyph = val
+			runes := []rune(val)
+			if len(runes) != 1 {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("default-glyph must be a single character, got %q", val))
+			} else {
+				c.DefaultGlyph = val
+			}
 		case "default-foreground":
-			c.DefaultForeground = val
+			if isValidCanvasColor(val) {
+				c.DefaultForeground = val
+			} else {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("invalid color %q for %s", val, key))
+			}
 		case "default-background":
-			c.DefaultBackground = val
+			if isValidCanvasColor(val) {
+				c.DefaultBackground = val
+			} else {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("invalid color %q for %s", val, key))
+			}
 		case "default-tool":
-			c.DefaultTool = val
+			if isValidTool(val) {
+				c.DefaultTool = val
+			} else {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("invalid tool %q for %s", val, key))
+			}
 		case "default-box-style":
-			c.DefaultBoxStyle = val
+			if isValidBoxStyle(val) {
+				c.DefaultBoxStyle = val
+			} else {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("invalid box style %q for %s", val, key))
+			}
 		default:
-			if ptr := c.Theme.field(key); ptr != nil && isValidThemeColor(val) {
+			ptr := c.Theme.field(key)
+			if ptr == nil {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("unknown config key %q", key))
+			} else if !isValidThemeColor(val) {
+				c.Warnings = append(c.Warnings, fmt.Sprintf("invalid color %q for %s", val, key))
+			} else {
 				*ptr = val
 			}
 		}
 	}
 
 	return c
+}
+
+func isValidTool(name string) bool {
+	for _, t := range toolRegistry {
+		if t.Name() == name {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidBoxStyle(name string) bool {
+	for _, s := range boxStyles {
+		if s.name == name {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *model) applyConfig() {

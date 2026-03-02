@@ -10,6 +10,7 @@ import (
 
 type clearConfirmTimeout struct{}
 type textCursorTick struct{}
+type alertTimeout struct{}
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -21,6 +22,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleMouse(msg)
 	case clearConfirmTimeout:
 		m.confirmClear = false
+		return m, nil
+	case alertTimeout:
+		m.alertMessage = ""
 		return m, nil
 	case textCursorTick:
 		if !m.textInsertActive {
@@ -83,6 +87,11 @@ func (m *model) handleResize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 
 func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.optionKeyHeld = msg.Alt
+
+	if m.alertMessage != "" {
+		m.alertMessage = ""
+		return m, nil
+	}
 
 	if m.showPalette {
 		return m.handlePaletteKey(msg)

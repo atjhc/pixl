@@ -178,6 +178,18 @@ func TestLoadConfigInvalidThemeColorIgnored(t *testing.T) {
 	if c.Theme.ToolbarFg != "red" {
 		t.Errorf("ToolbarFg = %q, want red (valid value should apply)", c.Theme.ToolbarFg)
 	}
+	if len(c.Warnings) != 1 {
+		t.Errorf("expected 1 warning, got %d", len(c.Warnings))
+	}
+}
+
+func TestLoadConfigUnknownKeyWarns(t *testing.T) {
+	writeTestConfig(t, "bogus-key = whatever\n")
+
+	c := loadConfig()
+	if len(c.Warnings) != 1 {
+		t.Errorf("expected 1 warning for unknown key, got %d", len(c.Warnings))
+	}
 }
 
 func TestConfigInvalidToolIgnored(t *testing.T) {
@@ -256,6 +268,78 @@ func TestColorStyleByNameAcceptsHyphens(t *testing.T) {
 	}
 	if code := colorToANSIBg("bright-red"); code != "101" {
 		t.Errorf("colorToANSIBg(bright-red) = %q, want 101", code)
+	}
+}
+
+func TestLoadConfigInvalidGlyphIgnoredAtLoad(t *testing.T) {
+	writeTestConfig(t, "default-glyph = abc\n")
+
+	c := loadConfig()
+	if c.DefaultGlyph != "" {
+		t.Errorf("DefaultGlyph = %q, want empty (multi-char should be rejected)", c.DefaultGlyph)
+	}
+}
+
+func TestLoadConfigEmptyGlyphIgnoredAtLoad(t *testing.T) {
+	writeTestConfig(t, "default-glyph =\n")
+
+	c := loadConfig()
+	if c.DefaultGlyph != "" {
+		t.Errorf("DefaultGlyph = %q, want empty (empty should be rejected)", c.DefaultGlyph)
+	}
+}
+
+func TestLoadConfigInvalidForegroundIgnoredAtLoad(t *testing.T) {
+	writeTestConfig(t, "default-foreground = notacolor\n")
+
+	c := loadConfig()
+	if c.DefaultForeground != "" {
+		t.Errorf("DefaultForeground = %q, want empty (invalid value should be rejected)", c.DefaultForeground)
+	}
+}
+
+func TestLoadConfigInvalidBackgroundIgnoredAtLoad(t *testing.T) {
+	writeTestConfig(t, "default-background = notacolor\n")
+
+	c := loadConfig()
+	if c.DefaultBackground != "" {
+		t.Errorf("DefaultBackground = %q, want empty (invalid value should be rejected)", c.DefaultBackground)
+	}
+}
+
+func TestLoadConfigInvalidToolIgnoredAtLoad(t *testing.T) {
+	writeTestConfig(t, "default-tool = Banana\n")
+
+	c := loadConfig()
+	if c.DefaultTool != "" {
+		t.Errorf("DefaultTool = %q, want empty (invalid value should be rejected)", c.DefaultTool)
+	}
+}
+
+func TestLoadConfigInvalidBoxStyleIgnoredAtLoad(t *testing.T) {
+	writeTestConfig(t, "default-box-style = Nonexistent\n")
+
+	c := loadConfig()
+	if c.DefaultBoxStyle != "" {
+		t.Errorf("DefaultBoxStyle = %q, want empty (invalid value should be rejected)", c.DefaultBoxStyle)
+	}
+}
+
+func TestLoadConfigValidToolAccepted(t *testing.T) {
+	writeTestConfig(t, "default-tool = Rectangle\n")
+
+	c := loadConfig()
+	if c.DefaultTool != "Rectangle" {
+		t.Errorf("DefaultTool = %q, want Rectangle", c.DefaultTool)
+	}
+}
+
+func TestLoadConfigValidBoxStyleAccepted(t *testing.T) {
+	writeTestConfig(t, "default-box-style = Heavy\n")
+
+	c := loadConfig()
+	if c.DefaultBoxStyle != "Heavy" {
+		t.Errorf("DefaultBoxStyle = %q, want Heavy", c.DefaultBoxStyle)
 	}
 }
 

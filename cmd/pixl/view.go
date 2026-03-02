@@ -125,6 +125,23 @@ func (m *model) View() string {
 		if dialogY < 0 {
 			dialogY = 0
 		}
+	} else if m.alertMessage != "" {
+		dialogStyle := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("1")).
+			Padding(0, 1)
+		warnStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+		dialog := dialogStyle.Render(warnStyle.Render(m.alertMessage))
+		dialogLines = strings.Split(dialog, "\n")
+		dialogWidth := lipgloss.Width(dialogLines[0])
+		dialogX = (m.width - dialogWidth) / 2
+		dialogY = (screenRows - len(dialogLines)) / 2
+		if dialogX < 0 {
+			dialogX = 0
+		}
+		if dialogY < 0 {
+			dialogY = 0
+		}
 	}
 
 	// Render screen rows
