@@ -148,6 +148,14 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.paletteQuery = ""
 		m.paletteIndex = 0
 		return m, nil
+	case "i":
+		cell := m.canvas.Get(m.hoverRow, m.hoverCol)
+		if cell != nil {
+			m.selectedChar = cell.char
+			m.foregroundColor = cell.foregroundColor
+			m.backgroundColor = cell.backgroundColor
+		}
+		return m, nil
 	case "y":
 		m.copySelection()
 		return m, nil

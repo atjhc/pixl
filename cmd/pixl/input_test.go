@@ -500,6 +500,80 @@ func TestClearCanvasFirstCReturnsTickCmd(t *testing.T) {
 	}
 }
 
+func TestEyedropperSamplesCell(t *testing.T) {
+	m := &model{
+		canvas:          NewCanvas(10, 10),
+		selectedTool:    "Point",
+		drawingTool:     "Point",
+		selectedChar:    "●",
+		foregroundColor: "white",
+		backgroundColor: "transparent",
+		hoverRow:        3,
+		hoverCol:        5,
+	}
+	m.canvas.Set(3, 5, "X", "red", "blue")
+
+	i := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}}
+	m.handleKey(i)
+
+	if m.selectedChar != "X" {
+		t.Errorf("selectedChar = %q, want X", m.selectedChar)
+	}
+	if m.foregroundColor != "red" {
+		t.Errorf("foregroundColor = %q, want red", m.foregroundColor)
+	}
+	if m.backgroundColor != "blue" {
+		t.Errorf("backgroundColor = %q, want blue", m.backgroundColor)
+	}
+}
+
+func TestEyedropperDefaultCell(t *testing.T) {
+	m := &model{
+		canvas:          NewCanvas(10, 10),
+		selectedTool:    "Point",
+		drawingTool:     "Point",
+		selectedChar:    "●",
+		foregroundColor: "red",
+		backgroundColor: "blue",
+		hoverRow:        3,
+		hoverCol:        5,
+	}
+
+	// Sampling a default cell picks up its defaults
+	i := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}}
+	m.handleKey(i)
+
+	if m.selectedChar != " " {
+		t.Errorf("selectedChar = %q, want space", m.selectedChar)
+	}
+	if m.foregroundColor != "white" {
+		t.Errorf("foregroundColor = %q, want white", m.foregroundColor)
+	}
+	if m.backgroundColor != "transparent" {
+		t.Errorf("backgroundColor = %q, want transparent", m.backgroundColor)
+	}
+}
+
+func TestEyedropperOutOfBounds(t *testing.T) {
+	m := &model{
+		canvas:          NewCanvas(10, 10),
+		selectedTool:    "Point",
+		drawingTool:     "Point",
+		selectedChar:    "●",
+		foregroundColor: "red",
+		backgroundColor: "blue",
+		hoverRow:        -1,
+		hoverCol:        -1,
+	}
+
+	i := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}}
+	m.handleKey(i)
+
+	if m.selectedChar != "●" {
+		t.Errorf("selectedChar should be unchanged for out of bounds, got %q", m.selectedChar)
+	}
+}
+
 func TestEscClosesMenuBeforeClearingSelection(t *testing.T) {
 	m := &model{
 		canvas:       NewCanvas(10, 10),

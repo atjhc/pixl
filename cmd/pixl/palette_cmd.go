@@ -31,6 +31,13 @@ func (m *model) paletteItems() []paletteItem {
 		{"Swap Colors", func(m *model) {
 			m.foregroundColor, m.backgroundColor = m.backgroundColor, m.foregroundColor
 		}},
+		{"Eyedropper", func(m *model) {
+			if cell := m.canvas.Get(m.hoverRow, m.hoverCol); cell != nil {
+				m.selectedChar = cell.char
+				m.foregroundColor = cell.foregroundColor
+				m.backgroundColor = cell.backgroundColor
+			}
+		}},
 	}
 }
 
