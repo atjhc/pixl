@@ -51,7 +51,7 @@ func (m *model) renderControlBar() string {
 	} else {
 		fgSwatch = colorStyleByName(m.foregroundColor).Render("██")
 	}
-	fgText := fmt.Sprintf("%sF%soreground: %s", underlineOn, underlineOff, fgSwatch)
+	fgText := fmt.Sprintf("%sF%soreground: %s %s", underlineOn, underlineOff, fgSwatch, colorDisplayName(m.foregroundColor))
 	var fgButton string
 	if m.showFgPicker {
 		fgButton = highlightStyle.Render(fgText)
@@ -70,7 +70,7 @@ func (m *model) renderControlBar() string {
 	} else {
 		bgSwatch = colorStyleByName(m.backgroundColor).Render("██")
 	}
-	bgText := fmt.Sprintf("%sB%sackground: %s", underlineOn, underlineOff, bgSwatch)
+	bgText := fmt.Sprintf("%sB%sackground: %s %s", underlineOn, underlineOff, bgSwatch, colorDisplayName(m.backgroundColor))
 	var bgButton string
 	if m.showBgPicker {
 		bgButton = highlightStyle.Render(bgText)

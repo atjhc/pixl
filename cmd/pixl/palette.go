@@ -104,6 +104,9 @@ func colorToANSIBg(name string) string {
 }
 
 func colorDisplayName(name string) string {
+	if name == "" {
+		return ""
+	}
 	if name == "transparent" {
 		return "None"
 	}
