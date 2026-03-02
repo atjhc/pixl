@@ -82,6 +82,23 @@ func (m *model) renderControlBar() string {
 	currentX += lipgloss.Width(bgButton)
 	currentX += 1 // separator
 
+	// Glyph button
+	categoryName := ""
+	if m.selectedCategory >= 0 && m.selectedCategory < len(characterGroups) {
+		categoryName = characterGroups[m.selectedCategory].name
+	}
+	glyphText := fmt.Sprintf("%sG%slyph: %s %s", underlineOn, underlineOff, m.selectedChar, categoryName)
+	var glyphButton string
+	if m.showGlyphPicker {
+		glyphButton = highlightStyle.Render(glyphText)
+	} else {
+		glyphButton = baseStyle.Render(glyphText)
+	}
+	m.toolbar.glyphX = currentX + toolbarButtonPadding
+	m.toolbar.glyphItemX = currentX + 9
+	currentX += lipgloss.Width(glyphButton)
+	currentX += 1 // separator
+
 	// Tool button
 	toolName := m.tool().DisplayName(m)
 	toolText := fmt.Sprintf("%sT%sool: %s", underlineOn, underlineOff, toolName)
@@ -102,7 +119,7 @@ func (m *model) renderControlBar() string {
 		modeIndicator = baseStyle.Render(modeText)
 	}
 
-	barContent := fgButton + sep + bgButton + sep + toolButton + sep + modeIndicator
+	barContent := fgButton + sep + bgButton + sep + glyphButton + sep + toolButton + sep + modeIndicator
 
 	fileIndicator := ""
 	if m.filePath != "" {

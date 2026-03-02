@@ -215,7 +215,7 @@ func TestToolbarToolClickToggles(t *testing.T) {
 		drawingTool:  "Point",
 		width:   80,
 		height:  30,
-		toolbar: toolbarLayout{toolX: 60},
+		toolbar: toolbarLayout{glyphX: 50, toolX: 60},
 	}
 
 	// Click on the tool button area

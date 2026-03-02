@@ -551,28 +551,28 @@ func TestDrawingToolsSubmenuNumberKeys(t *testing.T) {
 		toolPickerFocusLevel: 1,
 	}
 
-	// Press 1 to select Glyph selector (stays on same tool)
+	// Press 1 to select Points (drawingToolOptions[0])
 	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
-	if !m.onGlyphSelector {
-		t.Error("key 1: expected onGlyphSelector=true")
-	}
-
-	// Press 4 to select Ellipse (index 3 = drawingToolOptions[2])
-	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'4'}})
-	if m.selectedTool != "Ellipse" || m.circleMode {
-		t.Errorf("key 4: expected Ellipse, got %q circleMode=%v", m.selectedTool, m.circleMode)
-	}
-
-	// Press 5 to select Circle (index 4 = drawingToolOptions[3])
-	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'5'}})
-	if m.selectedTool != "Ellipse" || !m.circleMode {
-		t.Errorf("key 5: expected Circle, got %q circleMode=%v", m.selectedTool, m.circleMode)
-	}
-
-	// Press 2 to select Points (index 1 = drawingToolOptions[0])
-	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}})
 	if m.selectedTool != "Point" {
-		t.Errorf("key 2: expected Point, got %q", m.selectedTool)
+		t.Errorf("key 1: expected Point, got %q", m.selectedTool)
+	}
+
+	// Press 3 to select Ellipse (drawingToolOptions[2])
+	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'3'}})
+	if m.selectedTool != "Ellipse" || m.circleMode {
+		t.Errorf("key 3: expected Ellipse, got %q circleMode=%v", m.selectedTool, m.circleMode)
+	}
+
+	// Press 4 to select Circle (drawingToolOptions[3])
+	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'4'}})
+	if m.selectedTool != "Ellipse" || !m.circleMode {
+		t.Errorf("key 4: expected Circle, got %q circleMode=%v", m.selectedTool, m.circleMode)
+	}
+
+	// Press 2 to select Rectangle (drawingToolOptions[1])
+	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}})
+	if m.selectedTool != "Rectangle" {
+		t.Errorf("key 2: expected Rectangle, got %q", m.selectedTool)
 	}
 }
 

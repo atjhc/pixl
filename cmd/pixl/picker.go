@@ -16,7 +16,7 @@ func (m *model) renderCategoryPicker() string {
 	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := focusedBg
-	if m.toolPickerFocusLevel != 2 {
+	if m.glyphPickerFocusLevel != 0 {
 		selectedBg = unfocusedBg
 	}
 	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
@@ -58,7 +58,7 @@ func (m *model) renderGlyphsPicker() string {
 	unfocusedBg := themeColor(m.config.Theme.MenuUnfocusedBg)
 
 	selectedBg := unfocusedBg
-	if m.toolPickerFocusLevel == 3 {
+	if m.glyphPickerFocusLevel == 1 {
 		selectedBg = focusedBg
 	}
 	selectedStyle := lipgloss.NewStyle().Background(selectedBg).Foreground(themeColor(m.config.Theme.MenuSelectedFg))
@@ -99,54 +99,27 @@ func (m *model) renderDrawingToolPicker() string {
 
 	highlightIdx := m.toolSubmenuIndex()
 
-	iconCol := lipgloss.Width(m.selectedChar)
-
-	glyphLabel := "Glyph"
-	maxNameWidth := lipgloss.Width(glyphLabel)
+	maxNameWidth := 0
 	for _, opt := range drawingToolOptions {
 		if w := lipgloss.Width(opt.name); w > maxNameWidth {
 			maxNameWidth = w
 		}
 	}
-
-	totalEntries := len(drawingToolOptions) + 1
-	lineWidth := 1 + iconCol + 1 + maxNameWidth + 1
+	lineWidth := 1 + maxNameWidth + 1
 
 	var content strings.Builder
-
-	// Entry 0: Glyph selector
-	icon := m.selectedChar
-	for lipgloss.Width(icon) < iconCol {
-		icon += " "
-	}
-	line := " " + icon + " " + glyphLabel
-	for lipgloss.Width(line) < lineWidth {
-		line += " "
-	}
-	if highlightIdx == 0 {
-		content.WriteString(selectedStyle.Render(line))
-	} else {
-		content.WriteString(line)
-	}
-	content.WriteString("\n")
-
-	// Entries 1+: drawing tool options
 	for i, opt := range drawingToolOptions {
-		padIcon := ""
-		for lipgloss.Width(padIcon) < iconCol {
-			padIcon += " "
-		}
-		line := " " + padIcon + " " + opt.name
+		line := " " + opt.name
 		for lipgloss.Width(line) < lineWidth {
 			line += " "
 		}
 
-		if i+1 == highlightIdx {
+		if i == highlightIdx {
 			content.WriteString(selectedStyle.Render(line))
 		} else {
 			content.WriteString(line)
 		}
-		if i < totalEntries-2 {
+		if i < len(drawingToolOptions)-1 {
 			content.WriteString("\n")
 		}
 	}

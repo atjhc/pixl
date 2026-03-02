@@ -16,9 +16,11 @@ type toolbarLayout struct {
 	foregroundX     int
 	backgroundX     int
 	toolX           int
+	glyphX          int
 	foregroundItemX int
 	backgroundItemX int
 	toolItemX       int
+	glyphItemX      int
 }
 
 type selectionState struct {
@@ -47,12 +49,13 @@ type model struct {
 	ready              bool
 	showFgPicker          bool
 	showBgPicker          bool
-	showToolPicker        bool
-	toolPickerFocusLevel  int
-	selectedTool          string
-	drawingTool           string
-	selectedCategory      int
-	onGlyphSelector       bool
+	showToolPicker           bool
+	toolPickerFocusLevel    int
+	showGlyphPicker         bool
+	glyphPickerFocusLevel   int
+	selectedTool            string
+	drawingTool             string
+	selectedCategory        int
 	history            []Canvas
 	historyIndex       int
 	mouseDown          bool

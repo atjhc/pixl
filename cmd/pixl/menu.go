@@ -1,6 +1,6 @@
 package main
 
-const menuCount = 3
+const menuCount = 4
 
 func (m *model) activeMenu() int {
 	if m.showFgPicker {
@@ -9,6 +9,8 @@ func (m *model) activeMenu() int {
 		return 1
 	} else if m.showToolPicker {
 		return 2
+	} else if m.showGlyphPicker {
+		return 3
 	}
 	return -1
 }
@@ -17,9 +19,10 @@ func (m *model) openMenu(idx int) {
 	m.showFgPicker = idx == 0
 	m.showBgPicker = idx == 1
 	m.showToolPicker = idx == 2
+	m.showGlyphPicker = idx == 3
 	m.toolPickerFocusLevel = 0
-	m.onGlyphSelector = false
-	if idx == 2 {
+	m.glyphPickerFocusLevel = 0
+	if idx == 3 {
 		m.selectedCategory = m.findSelectedCharCategory()
 	}
 	if idx >= 0 {
@@ -39,8 +42,9 @@ func (m *model) closeMenus() {
 	m.showFgPicker = false
 	m.showBgPicker = false
 	m.showToolPicker = false
+	m.showGlyphPicker = false
 	m.toolPickerFocusLevel = 0
-	m.onGlyphSelector = false
+	m.glyphPickerFocusLevel = 0
 }
 
 // Top-level tool picker has 4 items: drawing group, Box, Fill, Select
@@ -111,13 +115,9 @@ func (m *model) toolHasSubmenu() bool {
 	return isDrawingTool(m.selectedTool) || m.selectedTool == "Box"
 }
 
-func (m *model) toolHasGlyphPicker() bool {
-	return isDrawingTool(m.selectedTool) && (m.onGlyphSelector || m.toolPickerFocusLevel >= 2)
-}
-
 func (m *model) toolSubmenuCount() int {
 	if isDrawingTool(m.selectedTool) {
-		return len(drawingToolOptions) + 1 // +1 for Glyph selector entry
+		return len(drawingToolOptions)
 	}
 	if m.selectedTool == "Box" {
 		return len(boxStyles)
@@ -127,10 +127,7 @@ func (m *model) toolSubmenuCount() int {
 
 func (m *model) toolSubmenuIndex() int {
 	if isDrawingTool(m.selectedTool) {
-		if m.onGlyphSelector {
-			return 0
-		}
-		return m.drawingToolOptionIndex() + 1
+		return m.drawingToolOptionIndex()
 	}
 	if m.selectedTool == "Box" {
 		return m.boxStyle
@@ -140,14 +137,8 @@ func (m *model) toolSubmenuIndex() int {
 
 func (m *model) setToolSubmenuIndex(idx int) {
 	if isDrawingTool(m.selectedTool) {
-		if idx == 0 {
-			m.onGlyphSelector = true
-			return
-		}
-		m.onGlyphSelector = false
-		optIdx := idx - 1
-		if optIdx >= 0 && optIdx < len(drawingToolOptions) {
-			opt := drawingToolOptions[optIdx]
+		if idx >= 0 && idx < len(drawingToolOptions) {
+			opt := drawingToolOptions[idx]
 			m.setTool(opt.toolName)
 			m.circleMode = opt.circleMode
 		}

@@ -96,7 +96,7 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.backgroundColor = colors[idx].name
 				return m, nil
 			}
-		} else if m.showToolPicker && m.toolPickerFocusLevel == 3 {
+		} else if m.showGlyphPicker && m.glyphPickerFocusLevel == 1 {
 			if m.selectedCategory >= 0 && m.selectedCategory < len(characterGroups) {
 				chars := characterGroups[m.selectedCategory].chars
 				if idx < len(chars) {
@@ -104,7 +104,7 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 			}
-		} else if m.showToolPicker && m.toolPickerFocusLevel == 2 {
+		} else if m.showGlyphPicker {
 			if idx < len(characterGroups) {
 				m.selectedCategory = idx
 				return m, nil
@@ -186,6 +186,13 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.openMenu(2)
 		}
 		return m, nil
+	case "g":
+		if m.showGlyphPicker {
+			m.closeMenus()
+		} else {
+			m.openMenu(3)
+		}
+		return m, nil
 	case "[":
 		active := m.activeMenu()
 		if active < 0 {
@@ -205,11 +212,10 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		if m.showToolPicker && m.toolPickerFocusLevel > 0 {
 			m.toolPickerFocusLevel--
-			if m.toolPickerFocusLevel == 1 && isDrawingTool(m.selectedTool) {
-				m.onGlyphSelector = true
-			} else if m.toolPickerFocusLevel == 0 {
-				m.onGlyphSelector = false
-			}
+			return m, nil
+		}
+		if m.showGlyphPicker && m.glyphPickerFocusLevel > 0 {
+			m.glyphPickerFocusLevel--
 			return m, nil
 		}
 		if m.activeMenu() >= 0 {
@@ -225,11 +231,10 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		if m.showToolPicker && m.toolPickerFocusLevel > 0 {
 			m.toolPickerFocusLevel--
-			if m.toolPickerFocusLevel == 1 && isDrawingTool(m.selectedTool) {
-				m.onGlyphSelector = true
-			} else if m.toolPickerFocusLevel == 0 {
-				m.onGlyphSelector = false
-			}
+			return m, nil
+		}
+		if m.showGlyphPicker && m.glyphPickerFocusLevel > 0 {
+			m.glyphPickerFocusLevel--
 			return m, nil
 		}
 		m.openMenu((m.activeMenu() - 1 + menuCount) % menuCount)
@@ -243,12 +248,8 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.toolPickerFocusLevel = 1
 			return m, nil
 		}
-		if m.showToolPicker && m.toolPickerFocusLevel == 1 && m.toolHasGlyphPicker() {
-			m.toolPickerFocusLevel = 2
-			return m, nil
-		}
-		if m.showToolPicker && m.toolPickerFocusLevel == 2 {
-			m.toolPickerFocusLevel = 3
+		if m.showGlyphPicker && m.glyphPickerFocusLevel == 0 {
+			m.glyphPickerFocusLevel = 1
 			if m.selectedCategory >= 0 && m.selectedCategory < len(characterGroups) {
 				currentIdx := m.findSelectedCharIndexInCategory(m.selectedCategory)
 				if currentIdx == 0 && m.selectedChar != characterGroups[m.selectedCategory].chars[0] {
@@ -261,6 +262,10 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "enter":
 		if m.showToolPicker && m.toolPickerFocusLevel >= 1 {
+			m.closeMenus()
+			return m, nil
+		}
+		if m.showGlyphPicker {
 			m.closeMenus()
 			return m, nil
 		}
@@ -293,13 +298,13 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.backgroundColor = colors[idx-1].name
 			}
 			return m, nil
-		} else if m.showToolPicker && m.toolPickerFocusLevel == 3 {
+		} else if m.showGlyphPicker && m.glyphPickerFocusLevel == 1 {
 			idx := m.findSelectedCharIndexInCategory(m.selectedCategory)
 			if idx > 0 {
 				m.selectedChar = characterGroups[m.selectedCategory].chars[idx-1]
 			}
 			return m, nil
-		} else if m.showToolPicker && m.toolPickerFocusLevel == 2 {
+		} else if m.showGlyphPicker {
 			if m.selectedCategory > 0 {
 				m.selectedCategory--
 			}
@@ -334,13 +339,13 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.backgroundColor = colors[idx+1].name
 			}
 			return m, nil
-		} else if m.showToolPicker && m.toolPickerFocusLevel == 3 {
+		} else if m.showGlyphPicker && m.glyphPickerFocusLevel == 1 {
 			idx := m.findSelectedCharIndexInCategory(m.selectedCategory)
 			if idx < len(characterGroups[m.selectedCategory].chars)-1 {
 				m.selectedChar = characterGroups[m.selectedCategory].chars[idx+1]
 			}
 			return m, nil
-		} else if m.showToolPicker && m.toolPickerFocusLevel == 2 {
+		} else if m.showGlyphPicker {
 			if m.selectedCategory < len(characterGroups)-1 {
 				m.selectedCategory++
 			}
@@ -456,62 +461,59 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 					}
 				}
 
-				// popup3 and popup4: glyph category and glyph pickers
-				if m.toolHasGlyphPicker() {
-					popup3 := m.renderCategoryPicker()
-					popup3Lines := strings.Split(popup3, "\n")
-					popup3Width := 0
-					if len(popup3Lines) > 0 {
-						popup3Width = lipgloss.Width(popup3Lines[0])
-					}
+				}
+		} else if m.showGlyphPicker {
+			// Glyph category picker click handling
+			catPopup := m.renderCategoryPicker()
+			catLines := strings.Split(catPopup, "\n")
+			catWidth := 0
+			if len(catLines) > 0 {
+				catWidth = lipgloss.Width(catLines[0])
+			}
+			catLeft := m.toolbar.glyphItemX - pickerContentOffset
+			catTop := controlBarHeight
 
-					// popup3 aligns with the Glyphs row (index 0) in the submenu
-					popup3CanvasY := submenuCanvasY
-					if popup3CanvasY+len(popup3Lines) > screenRows {
-						popup3CanvasY = screenRows - len(popup3Lines)
-					}
-					if popup3CanvasY < 0 {
-						popup3CanvasY = 0
-					}
-					popup3Top := controlBarHeight + popup3CanvasY
-					popup3Left := submenuLeft + submenuWidth - 1
+			if msg.Y >= catTop && msg.Y < catTop+len(catLines) &&
+				msg.X >= catLeft && msg.X < catLeft+catWidth {
+				row := msg.Y - catTop - 1
+				if row >= 0 && row < len(characterGroups) {
+					m.selectedCategory = row
+					m.glyphPickerFocusLevel = 0
+					return m, nil
+				}
+			}
 
-					if msg.Y >= popup3Top && msg.Y < popup3Top+len(popup3Lines) &&
-						msg.X >= popup3Left && msg.X < popup3Left+popup3Width {
-						row := msg.Y - popup3Top - 1
-						if row >= 0 && row < len(characterGroups) {
-							m.selectedCategory = row
-							m.toolPickerFocusLevel = 2
-							return m, nil
-						}
-					}
+			// Glyph picker click handling
+			{
+				screenRows := m.height - controlBarHeight
+				if !m.hasFixedSize() {
+					screenRows = m.canvas.height
+				}
+				_ = screenRows
+				glyphPopup := m.renderGlyphsPicker()
+				glyphLines := strings.Split(glyphPopup, "\n")
+				glyphWidth := 0
+				if len(glyphLines) > 0 {
+					glyphWidth = lipgloss.Width(glyphLines[0])
+				}
 
-					// popup4: glyphs picker
-					popup4 := m.renderGlyphsPicker()
-					popup4Lines := strings.Split(popup4, "\n")
-					popup4Width := 0
-					if len(popup4Lines) > 0 {
-						popup4Width = lipgloss.Width(popup4Lines[0])
-					}
+				glyphStartY := m.selectedCategory
+				if glyphStartY+len(glyphLines) > screenRows {
+					glyphStartY = screenRows - len(glyphLines)
+				}
+				if glyphStartY < 0 {
+					glyphStartY = 0
+				}
+				glyphTop := controlBarHeight + glyphStartY
+				glyphLeft := catLeft + catWidth - 1
 
-					popup4CanvasY := popup3CanvasY + m.selectedCategory
-					if popup4CanvasY+len(popup4Lines) > screenRows {
-						popup4CanvasY = screenRows - len(popup4Lines)
-					}
-					if popup4CanvasY < 0 {
-						popup4CanvasY = 0
-					}
-					popup4Top := controlBarHeight + popup4CanvasY
-					popup4Left := popup3Left + popup3Width - 1
-
-					if msg.Y >= popup4Top && msg.Y < popup4Top+len(popup4Lines) &&
-						msg.X >= popup4Left && msg.X < popup4Left+popup4Width {
-						glyphRow := msg.Y - popup4Top - 1
-						if glyphRow >= 0 && glyphRow < len(characterGroups[m.selectedCategory].chars) {
-							m.selectedChar = characterGroups[m.selectedCategory].chars[glyphRow]
-							m.toolPickerFocusLevel = 3
-							return m, nil
-						}
+				if msg.Y >= glyphTop && msg.Y < glyphTop+len(glyphLines) &&
+					msg.X >= glyphLeft && msg.X < glyphLeft+glyphWidth {
+					glyphRow := msg.Y - glyphTop - 1
+					if glyphRow >= 0 && glyphRow < len(characterGroups[m.selectedCategory].chars) {
+						m.selectedChar = characterGroups[m.selectedCategory].chars[glyphRow]
+						m.glyphPickerFocusLevel = 1
+						return m, nil
 					}
 				}
 			}
@@ -520,19 +522,32 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		// Check if clicking on control bar buttons
 		if msg.Y < controlBarHeight {
 			if m.toolbar.toolX > 0 && msg.X >= m.toolbar.toolX {
-				m.showToolPicker = !m.showToolPicker
-				m.showFgPicker = false
-				m.showBgPicker = false
+				if m.showToolPicker {
+					m.closeMenus()
+				} else {
+					m.openMenu(2)
+				}
 				return m, nil
-			} else if m.toolbar.backgroundX > 0 && msg.X >= m.toolbar.backgroundX && msg.X < m.toolbar.toolX {
-				m.showBgPicker = !m.showBgPicker
-				m.showFgPicker = false
-				m.showToolPicker = false
+			} else if m.toolbar.glyphX > 0 && msg.X >= m.toolbar.glyphX && msg.X < m.toolbar.toolX {
+				if m.showGlyphPicker {
+					m.closeMenus()
+				} else {
+					m.openMenu(3)
+				}
+				return m, nil
+			} else if m.toolbar.backgroundX > 0 && msg.X >= m.toolbar.backgroundX && msg.X < m.toolbar.glyphX {
+				if m.showBgPicker {
+					m.closeMenus()
+				} else {
+					m.openMenu(1)
+				}
 				return m, nil
 			} else if msg.X >= m.toolbar.foregroundX && msg.X < m.toolbar.backgroundX {
-				m.showFgPicker = !m.showFgPicker
-				m.showBgPicker = false
-				m.showToolPicker = false
+				if m.showFgPicker {
+					m.closeMenus()
+				} else {
+					m.openMenu(0)
+				}
 				return m, nil
 			}
 		}
