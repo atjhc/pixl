@@ -313,6 +313,77 @@ func TestColorPickerClickIndex(t *testing.T) {
 	}
 }
 
+func TestEscClosesMenuBeforeClearingSelection(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Select",
+		drawingTool:  "Point",
+	}
+	m.showFgPicker = true
+	m.selection.active = true
+
+	esc := tea.KeyMsg{Type: tea.KeyEscape}
+
+	// First esc: should close the menu but keep the selection
+	m.handleKey(esc)
+	if m.showFgPicker {
+		t.Error("first esc should close the menu")
+	}
+	if !m.selection.active {
+		t.Error("first esc should NOT clear the selection")
+	}
+
+	// Second esc: should clear the selection
+	m.handleKey(esc)
+	if m.selection.active {
+		t.Error("second esc should clear the selection")
+	}
+}
+
+func TestEscClosesToolPickerBeforeClearingSelection(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Select",
+		drawingTool:  "Point",
+	}
+	m.showToolPicker = true
+	m.toolPickerFocusLevel = 0
+	m.selection.active = true
+
+	esc := tea.KeyMsg{Type: tea.KeyEscape}
+
+	// First esc: should close tool picker but keep selection
+	m.handleKey(esc)
+	if m.showToolPicker {
+		t.Error("first esc should close the tool picker")
+	}
+	if !m.selection.active {
+		t.Error("first esc should NOT clear the selection")
+	}
+
+	// Second esc: should clear the selection
+	m.handleKey(esc)
+	if m.selection.active {
+		t.Error("second esc should clear the selection")
+	}
+}
+
+func TestEscClearsSelectionWhenNoMenuOpen(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Select",
+		drawingTool:  "Point",
+	}
+	m.selection.active = true
+
+	esc := tea.KeyMsg{Type: tea.KeyEscape}
+	m.handleKey(esc)
+
+	if m.selection.active {
+		t.Error("esc with no menu open should clear the selection")
+	}
+}
+
 func TestClampToCanvas(t *testing.T) {
 	m := &model{
 		canvas: NewCanvas(5, 5),

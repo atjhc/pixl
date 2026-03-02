@@ -175,11 +175,11 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-		m.showFgPicker = false
-		m.showBgPicker = false
-		m.showToolPicker = false
+		if m.activeMenu() >= 0 {
+			m.closeMenus()
+			return m, nil
+		}
 		m.selection.active = false
-		m.toolPickerFocusLevel = 0
 		return m, nil
 	case "left":
 		if m.activeMenu() < 0 {
