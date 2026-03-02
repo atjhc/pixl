@@ -2,175 +2,58 @@
 
 A fast, lightweight terminal-based pixel art editor using Unicode characters.
 
-Built with Go and Bubble Tea.
+Built with Go and [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
 ## Features
 
-### Drawing Tools
-- **Point Tool**: Freehand drawing by clicking and dragging
-- **Rectangle Tool**: Draw rectangle outlines with live preview
-- **Ellipse Tool**: Draw ellipses/circles with live preview
-  - Press **Return** to toggle between Ellipse and Circle modes
-  - Circle mode draws perfect circles (compensated for terminal aspect ratio)
-  - Hold **Option/Alt** + any key for temporary circle mode
-- **Select Tool**: Drag to select regions, then copy/cut/paste
-  - `y` - Yank (copy) selection
-  - `d` - Delete (cut) selection
-  - `p` - Paste at cursor location
-  - Transparent cells don't overwrite destination when pasting
-
-### Canvas & Display
-- **Dynamic Canvas**: Automatically resizes to fit terminal window
-- **Live Preview**: See shapes as you drag before committing
-- **Dual Color Support**: Both foreground and background colors per cell
-
-### Character Palette
-16 categories with hundreds of Unicode characters:
-- Circles, Squares, Triangles, Diamonds, Stars
-- Blocks, Shading, Dots
-- Box Drawing (Single, Double, Diagonal)
-- Curves, Arrows, Hearts, Weather, Symbols
-
-### Color Palette
-Extended color support in three groups:
-- **Basic**: Red, Green, Blue, Yellow, Magenta, Cyan, White
-- **Extended**: Bright versions of all basic colors
-- **Grayscale**: Black, Grey, Dark Grey
-- **Transparent**: For background-only or foreground-only drawing
-
-### History & Editing
-- **Undo**: Press `u` to undo (up to 50 operations)
-- **Redo**: Press `r` to redo
-- **Brushstroke Grouping**: Each continuous drag is one undo operation
-- **Clear Canvas**: Press `c` to clear everything
-
-### Keyboard Shortcuts
-
-**Pickers:**
-- `f` - Toggle Foreground color picker
-- `b` - Toggle Background color picker
-- `t` - Toggle Tool picker (glyphs are accessed via the Tool picker)
-
-**Editing:**
-- `u` - Undo
-- `r` - Redo
-- `c` - Clear canvas
-- `y` - Yank (copy) selection
-- `d` - Delete (cut) selection
-- `p` - Paste at cursor
-
-**Other:**
-- `:` - Open command palette (fuzzy search for tools and actions)
-- `Return` - Toggle Circle/Ellipse mode (when Ellipse tool selected)
-- `Esc` - Close open pickers / Clear selection / Exit text mode
-- `q` or `Ctrl+C` - Quit
-
-**Copying text from the canvas:**
-- Hold **Option** and click-drag (Terminal.app) or **Shift** and click-drag (iTerm2) to select text using your terminal's native selection, then Cmd+C to copy to the system clipboard.
-
-### Configuration
-
-pixl reads settings from `~/.config/pixl/config`. Lines starting with `#` are comments.
-
-```
-# Defaults
-merge-box-borders = true
-default-glyph = ●
-default-foreground = white
-default-tool = Point
-
-# Theme (defaults shown)
-toolbar-bg =
-toolbar-fg =
-toolbar-highlight-bg =
-toolbar-highlight-fg =
-menu-border = bright-blue
-menu-selected-bg = bright-cyan
-menu-selected-fg = bright-white
-menu-unfocused-bg = bright-black
-canvas-border = white
-selection-fg = bright-blue
-cursor-fg = bright-black
-```
-
-Theme colors accept any of the 16 standard terminal color names:
-`black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`,
-`bright-black`, `bright-red`, `bright-green`, `bright-yellow`, `bright-blue`,
-`bright-magenta`, `bright-cyan`, `bright-white`.
-ANSI numbers (e.g. `42`) and hex values (e.g. `#0E7490`) also work but may
-not display correctly on all terminals.
-
-### Mouse Support
-- Click and drag to draw with Point tool
-- Click and drag to create shapes with Rectangle/Ellipse tools
-- Click pickers to select characters, colors, and tools
-- Live preview shows shape outline while dragging
-- Pickers stay open while drawing for quick switching
+- **9 drawing tools**: Point, Rectangle, Ellipse, Circle, Line, Fill, Box, Text, Select
+- **8 box styles**: Single, Double, Rounded, Heavy, and 4 dashed variants with automatic border merging
+- **Character palette**: 16 categories with hundreds of Unicode glyphs
+- **Dual color support**: Foreground and background colors per cell
+- **Command palette**: Fuzzy search for any tool or action with `:`
+- **Eyedropper**: Sample glyph and colors from the canvas with `i`
+- **Undo/redo**: Up to 50 levels, grouped by brushstroke
+- **Live preview**: See shapes as you drag before committing
+- **Configurable**: Theme colors, default tools, and keybindings via `~/.config/pixl/config`
 
 ## Installation
 
 ```bash
-# Clone the repository
 git clone <repo-url>
 cd pixl
-
-# Build
 go build -o pixl ./cmd/pixl
-
-# Run
 ./pixl
 ```
 
-Or run directly without building:
+Or run directly:
 ```bash
 go run ./cmd/pixl
 ```
 
-## Architecture
+## Usage
 
-Built using the Elm Architecture via Bubble Tea:
+```bash
+./pixl                    # Dynamic canvas, resizes with terminal
+./pixl -w 40 -h 20       # Fixed 40x20 canvas
+./pixl art.txt            # Open existing file
+cat art.txt | ./pixl      # Read from stdin
+```
 
-- **Model**: Application state (canvas, selected tool/char/colors, history, UI state)
-- **Update**: Handle messages (mouse events, key presses, window resizes)
-- **View**: Render current state using Lip Gloss with column-by-column rendering
+On quit, the canvas is printed to stdout (or saved to the file if one was specified).
 
-### Key Files
+## Quick Start
 
-All source lives under `cmd/pixl/`:
+- **Draw**: Click and drag on the canvas
+- **Switch tools**: Press `t` to open the tool picker, or `:` for the command palette
+- **Change glyph**: Press `g` to open the glyph picker
+- **Change colors**: Press `f` for foreground, `b` for background
+- **Undo/redo**: `u` / `r`
+- **Quit**: `q`
 
-- `main.go` - Model struct, `initialModel()`, program entry
-- `input.go` - All keyboard and mouse event handling
-- `view.go` - Screen rendering with column-by-column composition
-- `tool_interface.go` - Tool interface + implementations
-- `tools.go` - Drawing algorithms (Bresenham, midpoint ellipse, flood fill)
-- `canvas.go` - Canvas data structure, file I/O
-- `history.go` - Undo/redo stack, clipboard ops
+## Documentation
 
-### How It Works
-
-1. **Canvas**: 2D array of cells, each storing character, foreground color, and background color
-2. **Mouse Events**: Bubble Tea provides cell-accurate mouse coordinates
-3. **Shape Algorithms**:
-   - Rectangle: Simple edge detection
-   - Ellipse: Midpoint ellipse algorithm with aspect ratio compensation
-   - Preview: Pre-calculated and cached for performance
-4. **History**: Undo stack with canvas snapshots, grouped by brushstroke
-5. **Rendering**: Column-by-column rendering prevents ANSI escape code bleeding between popups and canvas
-6. **Styling**: Lip Gloss for declarative terminal styling
-
-## Performance Optimizations
-
-- **Preview Caching**: Shape preview points calculated once per mouse move, not per render
-- **Efficient Algorithms**: Bresenham's and midpoint algorithms for optimal shape drawing
-- **Column-by-Column Rendering**: Minimizes ANSI escape code processing
-- **Smart History**: Canvas snapshots only saved when changes occur
-- **Bounded History**: Max 50 undo levels to prevent memory issues
-
-## Why Bubble Tea?
-
-- **Explicit State**: All state in one model struct, easy to reason about and debug
-- **Pure Functions**: View is deterministic based on model state
-- **Type Safety**: Go's type system catches errors at compile time
-- **Event Loop**: Clean separation of input handling and rendering
-- **Mouse Support**: Built-in cell-accurate mouse event handling
-- **No Dependencies**: Single binary with no runtime dependencies
+- [Tools](docs/tools.md) — All tools and their behavior
+- [Keyboard Shortcuts](docs/keyboard_shortcuts.md) — Complete keybinding reference
+- [Command Palette](docs/command_palette.md) — Fuzzy search for tools and actions
+- [Configuration](docs/configuration.md) — Config file options and theming
+- [Architecture](docs/architecture.md) — How the codebase is structured
