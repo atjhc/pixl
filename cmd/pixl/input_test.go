@@ -233,6 +233,72 @@ func TestToolbarToolClickToggles(t *testing.T) {
 	}
 }
 
+func TestMenuKeysMatchIndices(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+	}
+
+	for i, key := range menuKeys {
+		m.closeMenus()
+		msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)}
+		m.handleKey(msg)
+
+		active := m.activeMenu()
+		if active != i {
+			t.Errorf("key %q: activeMenu() = %d, want %d", key, active, i)
+		}
+
+		// Pressing same key again should close
+		m.handleKey(msg)
+		if m.activeMenu() != -1 {
+			t.Errorf("key %q: second press should close menu, got activeMenu() = %d", key, m.activeMenu())
+		}
+	}
+}
+
+func TestMenuOrderMatchesToolbar(t *testing.T) {
+	if menuKeys[menuForeground] != "f" {
+		t.Errorf("menuForeground key = %q, want f", menuKeys[menuForeground])
+	}
+	if menuKeys[menuBackground] != "b" {
+		t.Errorf("menuBackground key = %q, want b", menuKeys[menuBackground])
+	}
+	if menuKeys[menuGlyph] != "g" {
+		t.Errorf("menuGlyph key = %q, want g", menuKeys[menuGlyph])
+	}
+	if menuKeys[menuTool] != "t" {
+		t.Errorf("menuTool key = %q, want t", menuKeys[menuTool])
+	}
+}
+
+func TestMenuCycleOrder(t *testing.T) {
+	m := &model{
+		canvas:       NewCanvas(10, 10),
+		selectedTool: "Point",
+		drawingTool:  "Point",
+	}
+
+	// Open first menu
+	m.openMenu(0)
+
+	// Cycle through all menus with ]
+	right := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{']'}}
+	for i := 1; i < menuCount; i++ {
+		m.handleKey(right)
+		if m.activeMenu() != i {
+			t.Errorf("after %d ] presses: activeMenu() = %d, want %d", i, m.activeMenu(), i)
+		}
+	}
+
+	// One more should wrap to 0
+	m.handleKey(right)
+	if m.activeMenu() != 0 {
+		t.Errorf("after wrapping: activeMenu() = %d, want 0", m.activeMenu())
+	}
+}
+
 func TestToolbarFgClickToggles(t *testing.T) {
 	m := &model{
 		canvas:            NewCanvas(10, 10),

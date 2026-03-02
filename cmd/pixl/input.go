@@ -165,32 +165,16 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "p":
 		m.paste()
 		return m, nil
-	case "f":
-		if m.showFgPicker {
-			m.closeMenus()
-		} else {
-			m.openMenu(0)
-		}
-		return m, nil
-	case "b":
-		if m.showBgPicker {
-			m.closeMenus()
-		} else {
-			m.openMenu(1)
-		}
-		return m, nil
-	case "t":
-		if m.showToolPicker {
-			m.closeMenus()
-		} else {
-			m.openMenu(2)
-		}
-		return m, nil
-	case "g":
-		if m.showGlyphPicker {
-			m.closeMenus()
-		} else {
-			m.openMenu(3)
+	case "f", "b", "g", "t":
+		for i, key := range menuKeys {
+			if msg.String() == key {
+				if m.activeMenu() == i {
+					m.closeMenus()
+				} else {
+					m.openMenu(i)
+				}
+				return m, nil
+			}
 		}
 		return m, nil
 	case "[":
@@ -522,31 +506,31 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		// Check if clicking on control bar buttons
 		if msg.Y < controlBarHeight {
 			if m.toolbar.toolX > 0 && msg.X >= m.toolbar.toolX {
-				if m.showToolPicker {
+				if m.activeMenu() == menuTool {
 					m.closeMenus()
 				} else {
-					m.openMenu(2)
+					m.openMenu(menuTool)
 				}
 				return m, nil
 			} else if m.toolbar.glyphX > 0 && msg.X >= m.toolbar.glyphX && msg.X < m.toolbar.toolX {
-				if m.showGlyphPicker {
+				if m.activeMenu() == menuGlyph {
 					m.closeMenus()
 				} else {
-					m.openMenu(3)
+					m.openMenu(menuGlyph)
 				}
 				return m, nil
 			} else if m.toolbar.backgroundX > 0 && msg.X >= m.toolbar.backgroundX && msg.X < m.toolbar.glyphX {
-				if m.showBgPicker {
+				if m.activeMenu() == menuBackground {
 					m.closeMenus()
 				} else {
-					m.openMenu(1)
+					m.openMenu(menuBackground)
 				}
 				return m, nil
 			} else if msg.X >= m.toolbar.foregroundX && msg.X < m.toolbar.backgroundX {
-				if m.showFgPicker {
+				if m.activeMenu() == menuForeground {
 					m.closeMenus()
 				} else {
-					m.openMenu(0)
+					m.openMenu(menuForeground)
 				}
 				return m, nil
 			}

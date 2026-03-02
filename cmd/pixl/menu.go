@@ -1,28 +1,39 @@
 package main
 
-const menuCount = 4
+const (
+	menuForeground = iota
+	menuBackground
+	menuGlyph
+	menuTool
+	menuCount
+)
+
+// menuKeys maps each menu index to the key that toggles it.
+var menuKeys = [menuCount]string{"f", "b", "g", "t"}
 
 func (m *model) activeMenu() int {
-	if m.showFgPicker {
-		return 0
-	} else if m.showBgPicker {
-		return 1
-	} else if m.showToolPicker {
-		return 2
-	} else if m.showGlyphPicker {
-		return 3
+	flags := [menuCount]*bool{
+		&m.showFgPicker,
+		&m.showBgPicker,
+		&m.showGlyphPicker,
+		&m.showToolPicker,
+	}
+	for i, f := range flags {
+		if *f {
+			return i
+		}
 	}
 	return -1
 }
 
 func (m *model) openMenu(idx int) {
-	m.showFgPicker = idx == 0
-	m.showBgPicker = idx == 1
-	m.showToolPicker = idx == 2
-	m.showGlyphPicker = idx == 3
+	m.showFgPicker = idx == menuForeground
+	m.showBgPicker = idx == menuBackground
+	m.showGlyphPicker = idx == menuGlyph
+	m.showToolPicker = idx == menuTool
 	m.toolPickerFocusLevel = 0
 	m.glyphPickerFocusLevel = 0
-	if idx == 3 {
+	if idx == menuGlyph {
 		m.selectedCategory = m.findSelectedCharCategory()
 	}
 	if idx >= 0 {
@@ -41,8 +52,8 @@ func (m *model) setTool(tool string) {
 func (m *model) closeMenus() {
 	m.showFgPicker = false
 	m.showBgPicker = false
-	m.showToolPicker = false
 	m.showGlyphPicker = false
+	m.showToolPicker = false
 	m.toolPickerFocusLevel = 0
 	m.glyphPickerFocusLevel = 0
 }
